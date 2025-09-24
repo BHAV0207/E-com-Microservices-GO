@@ -8,7 +8,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-func getUserByEmail(ctx context.Context, Collection *mongo.Collection, email string) (bool, error) {
+func GetUserByEmail(ctx context.Context, Collection *mongo.Collection, email string) (models.User, bool, error) {
 	filter := bson.M{"email": email}
 	/*
 		bson.M
@@ -23,12 +23,12 @@ func getUserByEmail(ctx context.Context, Collection *mongo.Collection, email str
 
 	if err == mongo.ErrNoDocuments {
 		// ✅ No user found with this email
-		return false, nil
+		return existingUser, false, nil
 	}
 	if err != nil {
-		return false, err
+		return existingUser, false, err
 	}
 
 	// ✅ User exists
-	return true, nil
+	return existingUser, true, nil
 }
