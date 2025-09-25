@@ -10,12 +10,7 @@ import (
 	"github.com/BHAV0207/user-service/pkg/models"
 	"github.com/go-playground/validator"
 	"github.com/golang-jwt/jwt"
-	"go.mongodb.org/mongo-driver/mongo"
 )
-
-type UserHandler struct {
-	Collection *mongo.Collection
-}
 
 var validate = validator.New()
 
@@ -31,6 +26,15 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	hashedPass, err := service.HashPassword(user.Password)
+	if err != nil {
+		http.Error(w, "error in hasing password", http.StatusBadRequest)
+	}
+
+	user.Password = hashedPass
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = time.Now()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -94,7 +98,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !service.ComparePasswordHash(req.Password, user.Password) {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		http.Error(w, "Invalid password for hashing ", http.StatusUnauthorized)
 		return
 	}
 
