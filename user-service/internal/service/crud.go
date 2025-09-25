@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/BHAV0207/user-service/pkg/models"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -31,6 +32,37 @@ func GetAll(ctx context.Context, collection *mongo.Collection) ([]models.User, e
 	return users, nil
 }
 
-func Update(ctx context.Context , collection *mongo.Collection , id string)(int64 , error){
-	
+func Update(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID, updateFields bson.M) (int64, error) {
+	filter := bson.M{"_id": id}
+	update := bson.M{"$set": updateFields}
+
+	result, err := collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.ModifiedCount, nil
+}
+
+func Delete(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID) (int64, error) {
+	filter := bson.M{"_id": id}
+
+	res, err := collection.DeleteOne(ctx, filter)
+	if err != nil {
+		return 0, err
+	}
+
+	return res.DeletedCount, nil
+
+}
+
+func GetById(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID) (models.User, error) {
+	var user models.User
+	filter := bson.M{"_id": id}
+
+	if err := collection.FindOne(ctx, filter).Decode(&user); err != nil {
+		return user, err
+	}
+
+	return user, nil
 }
