@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net/http"
 
+	"github.com/BHAV0207/product-service/internal/handler"
 	"github.com/BHAV0207/product-service/internal/repository"
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -19,5 +23,15 @@ func main() {
 
 	db := client.Database("ProductService")
 
-	// productHandler := &
+	productHandler := &handler.ProductHandler{Collection: db.Collection("products")}
+
+	router := mux.NewRouter()
+
+	router.HandleFunc("/add", productHandler.CreateProduct).Methods("POST")
+	router.HandleFunc("/delete/{id}", productHandler.DeleteProduct).Methods("DELETE")
+	router.HandleFunc("/update/{id}", productHandler.UpdateProduct).Methods("PUT")
+	// router.HandleFunc("get" , productHandler.)
+
+	fmt.Println("Server listening on http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", router))
 }

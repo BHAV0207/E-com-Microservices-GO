@@ -28,6 +28,8 @@ func main() {
 
 	router.HandleFunc("/register", UserHandler.Register).Methods("POST")
 	router.HandleFunc("/login", UserHandler.Login).Methods("POST")
+	router.HandleFunc("/delete" , UserHandler.DeleteUser).Methods("DELETE");
+	router.HandleFunc("/id" , UserHandler.GetUserById)
 
 	fmt.Println("Server listening on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", router))
