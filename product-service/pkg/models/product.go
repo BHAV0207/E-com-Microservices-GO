@@ -7,7 +7,8 @@ import (
 )
 
 type Product struct {
-	ID          primitive.ObjectID `bson:"_id , omitempty" json:"_id"`
+	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
+	UserID      primitive.ObjectID `bson:"userId" json:"userId"`
 	Name        string             `bson:"name" json:"name" validate:"required"`
 	Description string             `bson:"description" json:"description"`
 	Category    string             `bson:"category" json:"category" validate:"required"`
@@ -16,4 +17,3 @@ type Product struct {
 	UpdatedAt   time.Time          `bson:"updatedAt" json:"updatedAt"`
 	Inventory   int64              `bson:"inventory" json:"inventory"`
 }
-

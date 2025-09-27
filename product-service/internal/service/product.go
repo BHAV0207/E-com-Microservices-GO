@@ -9,6 +9,66 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+func GetAll(ctx context.Context, collection *mongo.Collection) ([]models.Product, error) {
+	var products []models.Product
+
+	cursor, err := collection.Find(ctx, bson.D{})
+	if err != nil {
+		return nil, err
+	}
+
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var product models.Product
+		if err := cursor.Decode(&product); err != nil {
+			return nil, err
+		}
+
+		products = append(products, product)
+	}
+
+	return products, nil
+
+}
+
+func GetById(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID) (models.Product, error) {
+	var product models.Product
+
+	// ✅ Use "_id" (not "id")
+	filter := bson.M{"_id": id}
+
+	// ✅ Use FindOne instead of Find (because we want only one document)
+	err := collection.FindOne(ctx, filter).Decode(&product)
+	if err != nil {
+		return product, err // return zero-value product + error
+	}
+
+	return product, nil
+}
+
+func GetByUserId(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID) ([]models.Product, error) {
+	var products []models.Product
+
+	cursor, err := collection.Find(ctx, bson.D{{"userId", id}})
+	if err != nil {
+		return nil, err
+	}
+
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var product models.Product
+		if err := cursor.Decode(&product); err != nil {
+			return nil, err
+		}
+
+		products = append(products, product)
+	}
+
+	return products, nil
+}
+
 func InsertProduct(ctx context.Context, collection *mongo.Collection, product models.Product) (interface{}, error) {
 	result, err := collection.InsertOne(ctx, product)
 	return result.InsertedID, err
