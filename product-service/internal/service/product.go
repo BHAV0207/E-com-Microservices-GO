@@ -49,8 +49,8 @@ func GetById(ctx context.Context, collection *mongo.Collection, id primitive.Obj
 
 func GetByUserId(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID) ([]models.Product, error) {
 	var products []models.Product
-
-	cursor, err := collection.Find(ctx, bson.D{{"userId", id}})
+	// fmt.Println(id)
+	cursor, err := collection.Find(ctx, bson.D{{Name: "userId", Value: id}})
 	if err != nil {
 		return nil, err
 	}

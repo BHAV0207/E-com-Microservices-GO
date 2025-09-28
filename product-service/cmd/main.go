@@ -30,7 +30,9 @@ func main() {
 	router.HandleFunc("/add", productHandler.CreateProduct).Methods("POST")
 	router.HandleFunc("/delete/{id}", productHandler.DeleteProduct).Methods("DELETE")
 	router.HandleFunc("/update/{id}", productHandler.UpdateProduct).Methods("PUT")
-	// router.HandleFunc("get" , productHandler.)
+	router.HandleFunc("/get", productHandler.GetAllProducts).Methods("GET")
+	router.HandleFunc("/get/{id}", productHandler.GetProductById).Methods("GET")
+	router.HandleFunc("/get/user/{userId}", productHandler.GetProductsByUserId).Methods("GET")
 
 	fmt.Println("Server listening on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", router))

@@ -65,7 +65,9 @@ func (h *ProductHandler) GetAllProducts(w http.ResponseWriter, r *http.Request) 
 func (h *ProductHandler) GetProductById(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idHex := vars["id"]
+	fmt.Println(idHex)
 	id, err := primitive.ObjectIDFromHex(idHex)
+	fmt.Println(id)
 	if err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 	}
@@ -82,7 +84,9 @@ func (h *ProductHandler) GetProductById(w http.ResponseWriter, r *http.Request) 
 func (h *ProductHandler) GetProductsByUserId(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idHex := vars["userId"]
+	fmt.Println(idHex)
 	id, err := primitive.ObjectIDFromHex(idHex)
+	fmt.Println(id)
 	if err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 	}
@@ -98,7 +102,6 @@ func (h *ProductHandler) GetProductsByUserId(w http.ResponseWriter, r *http.Requ
 
 	w.Header().Set("Content-Type", "application/json") // Tell client: "I’m sending JSON"
 	json.NewEncoder(w).Encode(products)
-
 }
 
 func (h *ProductHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
