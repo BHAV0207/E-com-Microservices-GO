@@ -8,6 +8,7 @@ type CartItem struct {
 }
 
 type Cart struct {
+	ID     primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	UserId primitive.ObjectID `bson:"userId" json:"userId"`
 	Items  []CartItem         `bson:"items" json:"items"`
 }
