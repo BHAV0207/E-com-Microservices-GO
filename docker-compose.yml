@@ -26,9 +26,9 @@ services:
       dockerfile: Dockerfile
     container_name: product-service
     ports:
-      - "8081:8080"
+      - "4000:4000"
     environment:
-      - PORT=8080
+      - PORT=4000
     networks:
       - microservices-network
     restart: unless-stopped

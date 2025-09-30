@@ -2,18 +2,21 @@ package service
 
 import (
 	"context"
+	"log"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/BHAV0207/product-service/pkg/models"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"gopkg.in/mgo.v2/bson"
 )
 
 func GetAll(ctx context.Context, collection *mongo.Collection) ([]models.Product, error) {
 	var products []models.Product
 
-	cursor, err := collection.Find(ctx, bson.D{})
+	cursor, err := collection.Find(ctx, bson.M{}) // ✅ FIXED
 	if err != nil {
+		log.Printf("❌ MongoDB Find error: %v\n", err)
 		return nil, err
 	}
 
@@ -22,14 +25,13 @@ func GetAll(ctx context.Context, collection *mongo.Collection) ([]models.Product
 	for cursor.Next(ctx) {
 		var product models.Product
 		if err := cursor.Decode(&product); err != nil {
+			log.Printf("❌ Decode error: %v\n", err)
 			return nil, err
 		}
-
 		products = append(products, product)
 	}
 
 	return products, nil
-
 }
 
 func GetById(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID) (models.Product, error) {
@@ -46,15 +48,13 @@ func GetById(ctx context.Context, collection *mongo.Collection, id primitive.Obj
 
 	return product, nil
 }
-
 func GetByUserId(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID) ([]models.Product, error) {
 	var products []models.Product
-	// fmt.Println(id)
-	cursor, err := collection.Find(ctx, bson.D{{Name: "userId", Value: id}})
+
+	cursor, err := collection.Find(ctx, bson.D{{Key: "userId", Value: id}})
 	if err != nil {
 		return nil, err
 	}
-
 	defer cursor.Close(ctx)
 
 	for cursor.Next(ctx) {
@@ -62,7 +62,6 @@ func GetByUserId(ctx context.Context, collection *mongo.Collection, id primitive
 		if err := cursor.Decode(&product); err != nil {
 			return nil, err
 		}
-
 		products = append(products, product)
 	}
 

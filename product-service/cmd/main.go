@@ -34,6 +34,6 @@ func main() {
 	router.HandleFunc("/get/{id}", productHandler.GetProductById).Methods("GET")
 	router.HandleFunc("/get/user/{userId}", productHandler.GetProductsByUserId).Methods("GET")
 
-	fmt.Println("Server listening on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	fmt.Println("Server listening on http://localhost:4000")
+	log.Fatal(http.ListenAndServe(":4000", router))
 }

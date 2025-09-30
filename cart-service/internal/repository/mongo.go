@@ -20,10 +20,11 @@ func ConnectDb(uri string) *mongo.Client {
 		log.Fatal("MongoDB connection error:", err)
 	}
 
-	if err := client.Ping(ctx, nil); err != nil {
+	if err = client.Ping(ctx, nil); err != nil {
 		log.Fatal("Could not ping MongoDB:", err)
 	}
 
 	Client = client
 	return client
+
 }
