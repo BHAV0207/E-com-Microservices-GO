@@ -12,11 +12,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type CardHandler struct {
+type CartHandler struct {
 	Collection *mongo.Collection
 }
 
-func (h *CardHandler) AddToCart(w http.ResponseWriter, r *http.Request) {
+func (h *CartHandler) AddToCart(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.Body)
 	var req struct {
 		UserID    string `json:"userId"`
@@ -40,12 +40,14 @@ func (h *CardHandler) AddToCart(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid productId", http.StatusBadRequest)
 		return
 	}
-
 	if !service.ValidateUser(req.UserID) {
+		fmt.Println("Validation failed for UserID:", req.UserID)
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
+
 	if !service.ValidateProduct(req.ProductID) {
+		fmt.Println("Validation failed for ProductID:", req.ProductID)
 		http.Error(w, "Product not found", http.StatusNotFound)
 		return
 	}
@@ -55,15 +57,12 @@ func (h *CardHandler) AddToCart(w http.ResponseWriter, r *http.Request) {
 
 	err = service.AddItemToCart(ctx, h.Collection, userId, productId, req.Quantity)
 	if err != nil {
-			http.Error(w, "Failed to add to cart", http.StatusInternalServerError)
-			return
+		http.Error(w, "Failed to add to cart", http.StatusInternalServerError)
+		return
 	}
 
-	
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "Item added to cart"}`))
-
-
 
 }

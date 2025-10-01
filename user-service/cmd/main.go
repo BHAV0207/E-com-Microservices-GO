@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+	// ✅ MongoDB connection
 	uri := "mongodb+srv://jainbhav0207_db_user:XB9P4Jgp0fzqBCOS@cluster0.oa5vscu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 	client := repository.ConnectDb(uri)
 	defer func() {
@@ -21,17 +22,21 @@ func main() {
 	}()
 
 	db := client.Database("UserService")
+	userHandler := &handler.UserHandler{Collection: db.Collection("users")}
 
-	UserHandler := &handler.UserHandler{Collection: db.Collection("users")}
-
+	// ✅ Router setup
 	router := mux.NewRouter()
 
-	router.HandleFunc("/register", UserHandler.Register).Methods("POST")
-	router.HandleFunc("/login", UserHandler.Login).Methods("POST")
-	router.HandleFunc("/delete" , UserHandler.DeleteUser).Methods("DELETE");
-	router.HandleFunc("/id" , UserHandler.GetUserById)
+	// ------------------ AUTH ------------------
+	router.HandleFunc("/register", userHandler.Register).Methods("POST")
+	router.HandleFunc("/login", userHandler.Login).Methods("POST")
 
-	fmt.Println("Server listening on http://localhost:8080")
+	// ------------------ CRUD USERS ------------------
+	router.HandleFunc("/users", userHandler.GetAllUsers).Methods("GET")             // ✅ Get all users
+	router.HandleFunc("/users/{id}", userHandler.GetUserById).Methods("GET")        // ✅ Get user by ID
+	router.HandleFunc("/users/{id}", userHandler.UpdateUserDetails).Methods("PUT")  // ✅ Update user
+	router.HandleFunc("/users/{id}", userHandler.DeleteUser).Methods("DELETE")      // ✅ Delete user
+
+	fmt.Println("🚀 Server running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", router))
-
 }

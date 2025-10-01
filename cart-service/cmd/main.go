@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net/http"
 
+	"github.com/BHAV0207/cart-service/internal/handler"
 	"github.com/BHAV0207/cart-service/internal/repository"
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -18,5 +22,14 @@ func main() {
 	}()
 
 	db := client.Database("CartService")
+
+	cartHandelder := &handler.CartHandler{Collection: db.Collection("cart")}
+
+	router := mux.NewRouter()
+
+	router.HandleFunc("/addtocart", cartHandelder.AddToCart).Methods("POST")
+
+	fmt.Println("Server listening on http://localhost:9000")
+	log.Fatal(http.ListenAndServe(":9000", router))
 
 }

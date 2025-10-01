@@ -18,7 +18,7 @@ func (h *UserHandler) GetAllUsers(w http.ResponseWriter, r *http.Request) {
 
 	users, err := service.GetAll(ctx, h.Collection)
 	if err != nil {
-		http.Error(w, "Failed to fetch products", http.StatusInternalServerError)
+		http.Error(w, "Failed to fetch All users: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -43,7 +43,7 @@ func (h *UserHandler) GetUserById(w http.ResponseWriter, r *http.Request) {
 
 	user, err := service.GetById(ctx, h.Collection, id)
 	if err != nil {
-		http.Error(w, "Failed to get user", http.StatusInternalServerError)
+		http.Error(w, "Failed to get a user", http.StatusInternalServerError)
 		return
 	}
 
@@ -76,11 +76,11 @@ func (h *UserHandler) UpdateUserDetails(w http.ResponseWriter, r *http.Request) 
 
 	modifiedCnt, err := service.Update(ctx, h.Collection, id, updateFields)
 	if err != nil {
-		http.Error(w, "Failed to update product", http.StatusInternalServerError)
+		http.Error(w, "Failed to update user", http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintf(w, "Updated %d product(s)", modifiedCnt)
+	fmt.Fprintf(w, "Updated %d user(s)", modifiedCnt)
 
 }
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -98,8 +98,8 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	delCnt, err := service.Delete(ctx, h.Collection, id)
 	if err != nil {
-		http.Error(w, "Failed to delete product", http.StatusInternalServerError)
+		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
 		return
 	}
-	fmt.Fprintf(w, "Deleted %d product(s)", delCnt)
+	fmt.Fprintf(w, "Deleted %d user(s)", delCnt)
 }

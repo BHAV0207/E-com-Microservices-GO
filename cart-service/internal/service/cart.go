@@ -3,48 +3,74 @@ package service
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 
+	"github.com/BHAV0207/cart-service/pkg"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gopkg.in/mgo.v2/bson"
 )
 
 func ValidateUser(id string) bool {
-	resp, err := http.Get(fmt.Sprintf("http://user-service:8080/%s", id))
-	if err != nil || resp.StatusCode != http.StatusOK {
+	url := fmt.Sprintf("http://user-service:8080/users/%s", id)
+	fmt.Println("Calling User Service with URL:", url)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Error contacting user-service:", err)
 		return false
 	}
-	return true
+	defer resp.Body.Close()
+
+	// Read the response body for debugging
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+	} else {
+		fmt.Println("User Service response body:", string(body))
+	}
+
+	fmt.Println("User Service status code:", resp.StatusCode)
+	return resp.StatusCode == http.StatusOK
 }
 
 func ValidateProduct(id string) bool {
-	resp, err := http.Get(fmt.Sprintf("http://product-service:4000/get/%s", id))
-	if err != nil || resp.StatusCode != http.StatusOK {
+	url := fmt.Sprintf("http://product-service:4000/get/%s", id)
+	fmt.Println("Calling Product Service with URL:", url)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("Error contacting product-service:", err)
 		return false
 	}
-	return true
-}
+	defer resp.Body.Close()
 
-func AddItemToCart(ctx context.Context, collection *mongo.Collection, userId, productId primitive.ObjectID, quantity int64) error {
-	var cart struct {
-		ID     primitive.ObjectID `bson:"_id,omitempty"`
-		UserID primitive.ObjectID `bson:"userId"`
-		Items  []struct {
-			ProductID primitive.ObjectID `bson:"productId"`
-			Quantity  int64              `bson:"quantity"`
-		} `bson:"items"`
+	// Read the response body for debugging
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading product service response body:", err)
+	} else {
+		fmt.Println("Product Service response body:", string(body))
 	}
 
+	fmt.Println("Product Service status code:", resp.StatusCode)
+	return resp.StatusCode == http.StatusOK
+}
+
+// AddItemToCart adds a product to a user's cart or updates quantity if it already exists
+func AddItemToCart(ctx context.Context, collection *mongo.Collection, userId, productId primitive.ObjectID, quantity int64) error {
+	var cart pkg.Cart
+
+	// 1. Try to find existing cart
 	err := collection.FindOne(ctx, bson.M{"userId": userId}).Decode(&cart)
 	if err == mongo.ErrNoDocuments {
 		// 2. No cart exists, create a new one
-		newCart := bson.M{
-			"userId": userId,
-			"items": []bson.M{{
-				"productid": productId,
-				"quantity":  quantity,
-			}},
+		newCart := pkg.Cart{
+			UserId: userId,
+			Items: []pkg.CartItem{
+				{ProductId: productId, Quantity: quantity},
+			},
 		}
 		_, err := collection.InsertOne(ctx, newCart)
 		return err
@@ -52,25 +78,25 @@ func AddItemToCart(ctx context.Context, collection *mongo.Collection, userId, pr
 		return err
 	}
 
+	// 3. Cart exists: check if product already in items
 	found := false
 	for i, item := range cart.Items {
-		if item.ProductID == productId {
-			cart.Items[i].Quantity += quantity
+		if item.ProductId == productId {
+			cart.Items[i].Quantity += quantity // update quantity
 			found = true
 			break
 		}
 	}
+
+	// 4. If product not found, append new item
 	if !found {
-		cart.Items = append(cart.Items, struct {
-			ProductID primitive.ObjectID `bson:"productId"`
-			Quantity  int64              `bson:"quantity"`
-		}{ProductID: productId, Quantity: quantity})
+		cart.Items = append(cart.Items, pkg.CartItem{ProductId: productId, Quantity: quantity})
 	}
 
-	// 4. Update the cart in MongoDB
+	// 5. Update the cart in MongoDB
 	_, err = collection.UpdateOne(
 		ctx,
-		bson.M{"user_id": userId},
+		bson.M{"userId": userId}, // use correct field name
 		bson.M{"$set": bson.M{"items": cart.Items}},
 	)
 	return err
