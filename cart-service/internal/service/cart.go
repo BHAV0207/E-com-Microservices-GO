@@ -117,3 +117,46 @@ func AddItemToCart(ctx context.Context, collection *mongo.Collection, userId, pr
 	)
 	return err
 }
+
+func GetUserCart(ctx context.Context, collection *mongo.Collection, userId primitive.ObjectID) (interface{}, error) {
+	var cart pkg.Cart
+	err := collection.FindOne(ctx, bson.M{"userId": userId}).Decode(&cart)
+	if err != nil {
+		fmt.Println("❌ Error fetching cart from DB:", err)
+		return nil, err
+	}
+
+	var expandedCart []map[string]interface{}
+
+	for _, item := range cart.Items {
+		productId := item.ProductId.Hex()
+		productUrl := fmt.Sprintf("http://product-service:4000/get/%s", productId)
+
+		resp, err := http.Get(productUrl)
+		if err != nil {
+			fmt.Println("❌ Error contacting product service:", err)
+			continue // skip this product
+		}
+
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("❌ Error reading product response:", err)
+			continue
+		}
+
+		var data map[string]interface{}
+		if err := json.Unmarshal(body, &data); err != nil {
+			fmt.Println("❌ Error parsing product JSON:", err)
+			continue
+		}
+
+		data["productId"] = productId
+		data["quantity"] = item.Quantity
+
+		expandedCart = append(expandedCart, data)
+	}
+
+	return expandedCart, nil
+}

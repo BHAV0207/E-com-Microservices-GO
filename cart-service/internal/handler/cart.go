@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/BHAV0207/cart-service/internal/service"
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -46,7 +47,7 @@ func (h *CartHandler) AddToCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !service.ValidateProduct(req.ProductID , req.Quantity) {
+	if !service.ValidateProduct(req.ProductID, req.Quantity) {
 		fmt.Println("Validation failed for ProductID:", req.ProductID)
 		http.Error(w, "Product not found", http.StatusNotFound)
 		return
@@ -64,5 +65,28 @@ func (h *CartHandler) AddToCart(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "Item added to cart"}`))
+
+}
+
+func (h *CartHandler) GetUsersCartById(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idHex := vars["id"]
+
+	id, err := primitive.ObjectIDFromHex(idHex)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cart, err := service.GetUserCart(ctx, h.Collection, id)
+	if err != nil {
+		http.Error(w, "failed to fetch the cart", http.StatusBadRequest)
+	}
+
+	w.Header().Set("Content-Type", "application/json") // Tell client: "I’m sending JSON"
+	json.NewEncoder(w).Encode(cart)
 
 }

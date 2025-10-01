@@ -28,6 +28,7 @@ func main() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/addtocart", cartHandelder.AddToCart).Methods("POST")
+	router.HandleFunc("/user/{id}", cartHandelder.GetUsersCartById).Methods("GET")
 
 	fmt.Println("Server listening on http://localhost:9000")
 	log.Fatal(http.ListenAndServe(":9000", router))
