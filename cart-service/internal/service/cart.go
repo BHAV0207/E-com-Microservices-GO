@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -35,7 +36,7 @@ func ValidateUser(id string) bool {
 	return resp.StatusCode == http.StatusOK
 }
 
-func ValidateProduct(id string) bool {
+func ValidateProduct(id string, quantity int64) bool {
 	url := fmt.Sprintf("http://product-service:4000/get/%s", id)
 	fmt.Println("Calling Product Service with URL:", url)
 
@@ -46,13 +47,28 @@ func ValidateProduct(id string) bool {
 	}
 	defer resp.Body.Close()
 
-	// Read the response body for debugging
+	// Read the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Error reading product service response body:", err)
-	} else {
-		fmt.Println("Product Service response body:", string(body))
+		fmt.Println("❌ Error reading product service response body:", err)
+		return false
 	}
+	fmt.Println("✅ Product Service response body:", string(body))
+
+	var data map[string]any
+	if err := json.Unmarshal(body, &data); err != nil {
+		fmt.Println("❌ Error parsing JSON:", err)
+		return false
+	}
+
+	availableQty := int64(data["inventory"].(float64))
+
+	if availableQty < quantity {
+		fmt.Println("❌ Not enough stock available")
+		return false
+	}
+
+	fmt.Println("✅ Sufficient stock available")
 
 	fmt.Println("Product Service status code:", resp.StatusCode)
 	return resp.StatusCode == http.StatusOK

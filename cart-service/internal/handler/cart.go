@@ -46,7 +46,7 @@ func (h *CartHandler) AddToCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !service.ValidateProduct(req.ProductID) {
+	if !service.ValidateProduct(req.ProductID , req.Quantity) {
 		fmt.Println("Validation failed for ProductID:", req.ProductID)
 		http.Error(w, "Product not found", http.StatusNotFound)
 		return
