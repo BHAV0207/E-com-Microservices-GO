@@ -16,19 +16,20 @@ type OrderHnadler struct {
 	Collection *mongo.Collection
 }
 
-func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		UserId      string `json:"userId"`      // MongoDB ObjectID as string
-		CartId      string `json:"cartId"`      // Cart ID as string
-		Address     string `json:"address"`     // Shipping address
-		PaymentInfo string `json:"paymentInfo"` // e.g., "card", "cash"
-	}
+type CreateOrderRequest struct {
+	UserId      string `json:"userId"`
+	CartId      string `json:"cartId"`
+	Address     string `json:"address"`
+	PaymentInfo string `json:"paymentInfo"`
+}
 
+func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
+
+	var req CreateOrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "failed to process and get the user data", http.StatusBadRequest)
 		return
 	}
-
 	fmt.Println("📦 Received Order Data:", req)
 
 	userId, err := primitive.ObjectIDFromHex(req.UserId)
@@ -43,19 +44,13 @@ func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2️⃣ Validate cart and get items
-	cartItemsRaw, ok := service.ValidateCartAndGetItems(userId)
+	cartItemsSlice, ok := service.ValidateCartAndGetItems(userId)
 	if !ok {
 		http.Error(w, "Cart is empty or not found", http.StatusBadRequest)
 		return
 	}
 
-	// Assert to the correct type
-	cartItemsSlice, ok := cartItemsRaw.([]map[string]interface{})
-	if !ok {
-		http.Error(w, "Invalid cart items format", http.StatusInternalServerError)
-		return
-	}
-
+	
 	var orderItems []models.OrderItems
 	var total float64 = 0
 

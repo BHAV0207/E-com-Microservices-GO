@@ -32,7 +32,7 @@ func ValidateUser(id primitive.ObjectID) bool {
 	return resp.StatusCode == http.StatusOK
 }
 
-func ValidateCartAndGetItems(id primitive.ObjectID) (interface{}, bool) {
+func ValidateCartAndGetItems(id primitive.ObjectID) ([]map[string]interface{}, bool) {
 	url := fmt.Sprintf("http://cart-service:9000/user/%s", id.Hex())
 	fmt.Println("Calling Cart service with URL:", url)
 
