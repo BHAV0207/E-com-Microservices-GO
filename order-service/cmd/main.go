@@ -28,7 +28,7 @@ func main() {
 
 	router.HandleFunc("/order", OrderHnadler.CreateOrder).Methods("POST")
 	router.HandleFunc("/order/{id}", OrderHnadler.GetOrderByOrderId).Methods("GET")
-	// router.HandleFunc("/order/user/{id}", )
+	router.HandleFunc("/order/user/{id}", OrderHnadler.GetAllOrdersOfUserById).Methods("GET");
 
 	fmt.Println("Server listening on http://localhost:7000")
 	log.Fatal(http.ListenAndServe(":7000", router))

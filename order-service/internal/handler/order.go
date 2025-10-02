@@ -136,3 +136,31 @@ func (h *OrderHnadler) GetOrderByOrderId(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(order)
 }
+
+func (h *OrderHnadler) GetAllOrdersOfUserById(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idHex := vars["id"]
+
+	id, err := primitive.ObjectIDFromHex(idHex)
+	if err != nil {
+		http.Error(w, "id not correct", http.StatusBadRequest)
+	}
+
+	if !service.ValidateUser(id) {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	orders, err := service.GetAllOrderOfUser(ctx, h.Collection, id)
+	if err != nil {
+		http.Error(w, "couldn't fetch the order: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(orders)
+}

@@ -93,3 +93,21 @@ func GetOrder(ctx context.Context, collection *mongo.Collection, id primitive.Ob
 
 	return order, nil
 }
+
+func GetAllOrderOfUser(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID) ([]models.Order, error) {
+	var orders []models.Order
+	filter := bson.M{"userId": id}
+
+	cursor, err := collection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	if err = cursor.All(ctx, &orders); err != nil {
+		return nil, err
+	}
+
+	return orders, nil
+
+}
