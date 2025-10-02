@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github/BHAV0207/order-service/internal/service"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -50,7 +52,6 @@ func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	
 	var orderItems []models.OrderItems
 	var total float64 = 0
 
@@ -109,5 +110,29 @@ func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	// 6️⃣ Respond with created order
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(order)
+}
+
+func (h *OrderHnadler) GetOrderByOrderId(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idHex := vars["id"]
+
+	id, err := primitive.ObjectIDFromHex(idHex)
+	if err != nil {
+		http.Error(w, "invalid order ID format", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	order, err := service.GetOrder(ctx, h.Collection, id)
+	if err != nil {
+		http.Error(w, "couldn't fetch the order: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(order)
 }

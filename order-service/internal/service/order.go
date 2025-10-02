@@ -1,12 +1,17 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github/BHAV0207/order-service/pkg/models"
 	"io"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"gopkg.in/mgo.v2/bson"
 )
 
 func ValidateUser(id primitive.ObjectID) bool {
@@ -70,4 +75,21 @@ func ValidateCartAndGetItems(id primitive.ObjectID) ([]map[string]interface{}, b
 
 	return items, true
 
+}
+
+func GetOrder(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID) (models.Order, error) {
+	var order models.Order
+
+	filter := bson.M{"_id": id}
+
+	err := collection.FindOne(ctx, filter).Decode(&order)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return order, errors.New("order not found")
+		}
+		return order, err
+	}
+
+	return order, nil
 }
