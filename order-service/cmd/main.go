@@ -2,8 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github/BHAV0207/order-service/internal/handler"
 	"github/BHAV0207/order-service/internal/repository"
 	"log"
+	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
@@ -16,8 +21,14 @@ func main() {
 		}
 	}()
 
-	db := client.Database("OrderService");
+	db := client.Database("OrderService")
 
-	
+	OrderHnadler := &handler.OrderHnadler{Collection: db.Collection("order")}
+	router := mux.NewRouter()
+
+	router.HandleFunc("/order", OrderHnadler.CreateOrder).Methods("POST")
+
+	fmt.Println("Server listening on http://localhost:7000")
+	log.Fatal(http.ListenAndServe(":7000", router))
 
 }

@@ -29,8 +29,7 @@ COPY --from=builder /app/main .
 RUN chown -R appuser:appgroup /root/
 USER appuser
 
-# Note: order-service doesn't expose an HTTP port yet
-# EXPOSE 7000
+EXPOSE 7000
 
 CMD ["./main"]
 
