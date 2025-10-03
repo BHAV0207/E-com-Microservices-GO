@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -73,9 +74,18 @@ func GetByUserId(ctx context.Context, collection *mongo.Collection, id primitive
 	return products, nil
 }
 
-func InsertProduct(ctx context.Context, collection *mongo.Collection, product models.Product) (interface{}, error) {
+func InsertProduct(ctx context.Context, collection *mongo.Collection, product models.Product) (primitive.ObjectID, error) {
 	result, err := collection.InsertOne(ctx, product)
-	return result.InsertedID, err
+	if err != nil {
+		return primitive.NilObjectID, err
+	}
+
+	id, ok := result.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return primitive.NilObjectID, fmt.Errorf("failed to assert InsertedID to ObjectID")
+	}
+
+	return id, nil
 }
 
 func UpdateProduct(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID, updateFields bson.M) (int64, error) {
@@ -114,6 +124,7 @@ func FetchInventoryByProductID(ctx context.Context, id primitive.ObjectID) (type
 	}
 
 	client := http.Client{Timeout: 5 * time.Second}
+	// So client := http.Client{Timeout: 5 * time.Second} creates a simple client with a 5-second timeout, meaning the request will fail if it takes longer than 5 seconds.
 	resp, err := client.Do(req)
 	if err != nil {
 		return inventory, fmt.Errorf("inventory service unavailable: %v", err)
@@ -129,4 +140,51 @@ func FetchInventoryByProductID(ctx context.Context, id primitive.ObjectID) (type
 	}
 
 	return inventory, nil
+}
+
+type InventoryRequest struct {
+	ProductId primitive.ObjectID `json:"productId"`
+	Inventory int64              `json:"inventory"`
+}
+
+func CreateInventoryForProduct(id primitive.ObjectID) error {
+	inventoryURL := "http://inventory-service:6000/create"
+
+	bodyData := InventoryRequest{
+		ProductId: id,
+		Inventory: 100,
+	}
+
+	bodyBytes, err := json.Marshal(bodyData)
+	if err != nil {
+		return fmt.Errorf("failed to marshal inventory request: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	/*Notice that the body has to be an io.Reader.
+	io.Reader is an interface in Go that represents anything you can read bytes from.
+	Examples: a file, a network connection, a byte slice, or a buffer.
+	So if you have some JSON in a byte slice (like bodyBytes), you need a type that implements io.Reader.
+	2️⃣ What bytes.NewBuffer Does
+	bytes.NewBuffer converts a []byte into a buffer that implements io.Reader (and io.Writer) so you can pass it to functions that need an io.Reader.*/
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, inventoryURL, bytes.NewBuffer(bodyBytes))
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("inventory service unavailable: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("inventory creation failed with status: %d", resp.StatusCode)
+	}
+
+	fmt.Println("✅ Inventory created successfully for product:", id.Hex())
+	return nil
+
 }

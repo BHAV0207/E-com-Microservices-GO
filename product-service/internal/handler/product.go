@@ -45,6 +45,14 @@ func (h *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to insert product", http.StatusInternalServerError)
 		return
 	}
+
+	go func(productId primitive.ObjectID){
+		if err := service.CreateInventoryForProduct(productId) ; err!= nil {
+			fmt.Printf("⚠️ Failed to create inventory for product %s: %v\n", productId.Hex(), err)
+		}
+	}(id)
+
+
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "Inserted product with ID: %v", id)
 
