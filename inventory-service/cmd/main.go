@@ -28,6 +28,7 @@ func main() {
 
 	router.HandleFunc("/get/{id}", InventoryHandler.GetInventoryByProducId).Methods("GET")
 	router.HandleFunc("/create", InventoryHandler.CreateInventory).Methods("POST")
+	router.HandleFunc("/update/{id}", InventoryHandler.UpdateInventory).Methods("PUT")
 
 	fmt.Println("Server listening on http://localhost:6000")
 	log.Fatal(http.ListenAndServe(":6000", router))

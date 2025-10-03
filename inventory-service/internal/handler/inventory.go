@@ -91,3 +91,36 @@ func (h *InventoryHandler) CreateInventory(w http.ResponseWriter, r *http.Reques
 	})
 
 }
+
+func (h *InventoryHandler) UpdateInventory(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idHex := vars["id"]
+	id, err := primitive.ObjectIDFromHex(idHex)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+	}
+
+	var updateFields map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&updateFields); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	updateFields["updatedAt"] = time.Now()
+
+	// 4️⃣ Context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// 5️⃣ Call service layer
+	updatedInventory, err := service.Update(ctx, h.Collection, id, updateFields)
+	if err != nil {
+		http.Error(w, "failed to update inventory: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// 6️⃣ Return updated document as response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(updatedInventory)
+}
