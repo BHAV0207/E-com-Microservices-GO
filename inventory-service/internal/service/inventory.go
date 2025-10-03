@@ -18,3 +18,13 @@ func Get(context context.Context, collection *mongo.Collection, filter bson.M) (
 
 	return inventory, nil
 }
+
+func Create(ctx context.Context, collection *mongo.Collection, inventory models.Inventory) (*mongo.InsertOneResult, error) {
+	res, err := collection.InsertOne(ctx, inventory)
+
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+
+}

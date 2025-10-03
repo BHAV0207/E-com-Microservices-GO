@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/BHAV0207/inventory-service/internal/service"
+	"github.com/BHAV0207/inventory-service/pkg/models"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -39,4 +40,54 @@ func (h *InventoryHandler) GetInventoryByProducId(w http.ResponseWriter, r *http
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(inventory)
+}
+
+type InventoryRequest struct {
+	ID        primitive.ObjectID `json:"_id"`
+	ProductId primitive.ObjectID `json:"productId"`
+	Inventory int64              `json:"inventory"`
+}
+
+func (h *InventoryHandler) CreateInventory(w http.ResponseWriter, r *http.Request) {
+	var req InventoryRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid body format provided", http.StatusBadRequest)
+	}
+
+	if req.ProductId.IsZero() {
+		http.Error(w, "ProductId is required", http.StatusBadRequest)
+		return
+	}
+
+	if req.Inventory < 0 {
+		http.Error(w, "Inventory cannot be negative", http.StatusBadRequest)
+		return
+	}
+
+	inventory := models.Inventory{
+		ID:        primitive.NewObjectID(),
+		ProductId: req.ProductId,
+		Inventory: req.Inventory,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	result, err := service.Create(ctx, h.Collection, inventory)
+	if err != nil {
+		http.Error(w, "Failed to create inventory: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":    "Inventory created successfully",
+		"inventory":  inventory,
+		"insertedId": result.InsertedID,
+	})
+
 }

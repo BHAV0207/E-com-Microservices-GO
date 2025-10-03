@@ -26,8 +26,8 @@ func main() {
 
 	router := mux.NewRouter()
 
-	
-	router.HandleFunc("/get/{id}" , InventoryHandler.GetInventoryByProducId).Methods("GET");
+	router.HandleFunc("/get/{id}", InventoryHandler.GetInventoryByProducId).Methods("GET")
+	router.HandleFunc("/create", InventoryHandler.CreateInventory).Methods("POST")
 
 	fmt.Println("Server listening on http://localhost:6000")
 	log.Fatal(http.ListenAndServe(":6000", router))
