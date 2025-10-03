@@ -15,5 +15,5 @@ type Product struct {
 	Price       float64            `bson:"price" json:"price"`
 	CreatedAt   time.Time          `bson:"createdAt" json:"createdAt"`
 	UpdatedAt   time.Time          `bson:"updatedAt" json:"updatedAt"`
-	Inventory   int64              `bson:"inventory" json:"inventory"`
+	// Inventory   int64              `bson:"inventory" json:"inventory"`
 }

@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/BHAV0207/product-service/internal/service"
 	"github.com/BHAV0207/product-service/pkg/models"
+	"github.com/BHAV0207/product-service/pkg/types"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -65,20 +67,58 @@ func (h *ProductHandler) GetAllProducts(w http.ResponseWriter, r *http.Request) 
 func (h *ProductHandler) GetProductById(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idHex := vars["id"]
-	fmt.Println(idHex)
+
 	id, err := primitive.ObjectIDFromHex(idHex)
 	fmt.Println(id)
 	if err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 	}
 
-	context, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	product, err := service.GetById(context, h.Collection, id)
+	var (
+		product    models.Product
+		inventory  types.InventoryResponse
+		productErr error
+		invErr     error
+	)
 
-	w.Header().Set("Content-Type", "application/json") // Tell client: "I’m sending JSON"
-	json.NewEncoder(w).Encode(product)
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		product, productErr = service.GetById(ctx, h.Collection, id)
+	}()
+
+	go func() {
+		defer wg.Done()
+		inventory, invErr = service.FetchInventoryByProductID(ctx, id)
+	}()
+
+	wg.Wait()
+
+	// 🛑 Handle errors individually
+	if productErr != nil {
+		http.Error(w, "product not found", http.StatusNotFound)
+		return
+	}
+	if invErr != nil {
+		// You can choose to fail here OR continue without inventory
+		http.Error(w, invErr.Error(), http.StatusBadGateway)
+		return
+	}
+	response := struct {
+		Product   models.Product   `json:"product"`
+		Inventory types.InventoryResponse `json:"inventory"`
+	}{
+		Product:   product,
+		Inventory: inventory,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func (h *ProductHandler) GetProductsByUserId(w http.ResponseWriter, r *http.Request) {
