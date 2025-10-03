@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -123,4 +124,24 @@ func (h *InventoryHandler) UpdateInventory(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(updatedInventory)
+}
+
+func (h *InventoryHandler) DeleteInventory(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idHex := vars["id"]
+	id, err := primitive.ObjectIDFromHex(idHex)
+	if err != nil {
+		http.Error(w, "id not valid ", http.StatusBadRequest)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	delCnt, err := service.DeleteProduct(ctx, h.Collection, id)
+	if err != nil {
+		http.Error(w, "failed to delete the product", http.StatusInternalServerError)
+	}
+
+	fmt.Fprintf(w, "Deleted %d product(s)", delCnt)
+
 }

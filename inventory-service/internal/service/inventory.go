@@ -47,3 +47,14 @@ func Update(ctx context.Context, collection *mongo.Collection, id primitive.Obje
 
 	return updatedInventory, nil
 }
+
+func DeleteProduct(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID) (int64, error) {
+	filter := bson.M{"_id": id}
+
+	result, err := collection.DeleteOne(ctx, filter)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.DeletedCount, nil
+}

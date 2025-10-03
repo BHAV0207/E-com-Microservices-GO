@@ -188,3 +188,26 @@ func CreateInventoryForProduct(id primitive.ObjectID) error {
 	return nil
 
 }
+
+func DeleteInventoryForProduct(id primitive.ObjectID) (error) {
+		inventoryURL := "http://inventory-service:6000/delete"
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		req , err := http.NewRequestWithContext(ctx , http.MethodDelete , inventoryURL , nil)
+		client := &http.Client{Timeout: 5*time.Second};
+		resp , err := client.Do(req);
+
+		if err != nil {
+			return fmt.Errorf("inventory service unavailable: %v", err)
+		}
+		defer resp.Body.Close()
+	
+		if resp.StatusCode != http.StatusCreated {
+			return fmt.Errorf("inventory creation failed with status: %d", resp.StatusCode)
+		}
+	
+		fmt.Println("✅ Inventory created successfully for product:", id.Hex())
+		return nil
+}

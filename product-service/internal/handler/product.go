@@ -46,12 +46,11 @@ func (h *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go func(productId primitive.ObjectID){
-		if err := service.CreateInventoryForProduct(productId) ; err!= nil {
+	go func(productId primitive.ObjectID) {
+		if err := service.CreateInventoryForProduct(productId); err != nil {
 			fmt.Printf("⚠️ Failed to create inventory for product %s: %v\n", productId.Hex(), err)
 		}
 	}(id)
-
 
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "Inserted product with ID: %v", id)
@@ -118,7 +117,7 @@ func (h *ProductHandler) GetProductById(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	response := struct {
-		Product   models.Product   `json:"product"`
+		Product   models.Product          `json:"product"`
 		Inventory types.InventoryResponse `json:"inventory"`
 	}{
 		Product:   product,
@@ -192,11 +191,39 @@ func (h *ProductHandler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	delCnt, err := service.DeleteProduct(ctx, h.Collection, id)
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	var delCnt int64
+	var prodErr, invErr error
+
+	go func() {
+		defer wg.Done()
+		delCnt, prodErr = service.DeleteProduct(ctx, h.Collection, id)
+	}()
+
+	go func() {
+		defer wg.Done()
+		invErr = service.DeleteInventoryForProduct(id)
+	}()
+
 	if err != nil {
-		http.Error(w, "failed to delete the product", http.StatusInternalServerError)
+		http.Error(w, "failed to delete the Inventory", http.StatusInternalServerError)
 	}
 
-	fmt.Fprintf(w, "Deleted %d product(s)", delCnt)
+	wg.Wait() // wait for both operations
 
+	if prodErr != nil {
+		http.Error(w, "Failed to delete product: "+prodErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if invErr != nil {
+		http.Error(w, "Failed to delete inventory: "+invErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Deleted product and its inventory successfully, affected records: %d", delCnt)
 }
