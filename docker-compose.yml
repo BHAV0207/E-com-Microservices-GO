@@ -39,6 +39,25 @@ services:
       retries: 3
       start_period: 40s
 
+  inventory-service:
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    container_name: inventory-service
+    ports:
+      - "6000:6000"
+    environment:
+      - PORT=6000
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6000/get/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   cart-service:
     build:
       context: ./cart-service
