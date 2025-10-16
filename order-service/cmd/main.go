@@ -3,16 +3,31 @@ package main
 import (
 	"context"
 	"fmt"
-	"github/BHAV0207/order-service/internal/handler"
-	"github/BHAV0207/order-service/internal/repository"
 	"log"
 	"net/http"
+	"os"
+
+	"github/BHAV0207/order-service/internal/handler"
+	"github/BHAV0207/order-service/internal/repository"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	uri := "mongodb+srv://jainbhav0207_db_user:WHMJ524qrJW27rDW@cluster0.wy3eykv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+	if err := godotenv.Load(); err != nil {
+		log.Println("⚠️  No .env file found — using system environment variables")
+	}
+
+	uri := os.Getenv("MONGO_ORDER_URI")
+	if uri == "" {
+		log.Fatal("MONGO_ORDER_URI is not set")
+	}
+
+	port := os.Getenv("PORT")
+	// if port == "" {
+	// 	port = "7000"
+	// }
 
 	client := repository.ConnectDb(uri)
 	defer func() {
@@ -22,15 +37,13 @@ func main() {
 	}()
 
 	db := client.Database("OrderService")
-
 	OrderHnadler := &handler.OrderHnadler{Collection: db.Collection("order")}
 	router := mux.NewRouter()
 
 	router.HandleFunc("/order", OrderHnadler.CreateOrder).Methods("POST")
 	router.HandleFunc("/order/{id}", OrderHnadler.GetOrderByOrderId).Methods("GET")
-	router.HandleFunc("/order/user/{id}", OrderHnadler.GetAllOrdersOfUserById).Methods("GET");
+	router.HandleFunc("/order/user/{id}", OrderHnadler.GetAllOrdersOfUserById).Methods("GET")
 
-	fmt.Println("Server listening on http://localhost:7000")
-	log.Fatal(http.ListenAndServe(":7000", router))
-
+	fmt.Println("Server listening on http://localhost:%s", port)
+	log.Fatal(http.ListenAndServe(":"+port, router))
 }

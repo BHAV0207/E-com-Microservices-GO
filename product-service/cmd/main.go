@@ -5,14 +5,31 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/BHAV0207/product-service/internal/handler"
 	"github.com/BHAV0207/product-service/internal/repository"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	uri := "mongodb+srv://jainbhav0207_db_user:e94JtmF1QEGw0pxT@cluster0.uxo15jw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
+	println(godotenv.Load())
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("⚠️  No .env file found — using system environment variables")
+	}
+
+	uri := os.Getenv("MONGO_PRODUCT_URI")
+	if uri == "" {
+		log.Fatal("MONGO_PRODUCT_URI is not set")
+	}
+	println(uri)
+
+	port := os.Getenv("PORT")
+	println(port)
 
 	client := repository.ConnectDb(uri)
 	defer func() {
@@ -34,6 +51,6 @@ func main() {
 	router.HandleFunc("/get/{id}", productHandler.GetProductById).Methods("GET")
 	router.HandleFunc("/get/user/{userId}", productHandler.GetProductsByUserId).Methods("GET")
 
-	fmt.Println("Server listening on http://localhost:4000")
-	log.Fatal(http.ListenAndServe(":4000", router))
+	fmt.Println("Server listening on http://localhost:%s", port)
+	log.Fatal(http.ListenAndServe(":"+port, router))
 }

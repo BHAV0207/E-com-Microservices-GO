@@ -12,12 +12,10 @@ import (
 
 func Get(context context.Context, collection *mongo.Collection, filter bson.M) (models.Inventory, error) {
 	var inventory models.Inventory
-
 	err := collection.FindOne(context, filter).Decode(&inventory)
 	if err != nil {
 		return inventory, err
 	}
-
 	return inventory, nil
 }
 

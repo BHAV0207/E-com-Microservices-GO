@@ -54,6 +54,7 @@ func GetById(ctx context.Context, collection *mongo.Collection, id primitive.Obj
 
 	return product, nil
 }
+
 func GetByUserId(ctx context.Context, collection *mongo.Collection, id primitive.ObjectID) ([]models.Product, error) {
 	var products []models.Product
 
@@ -114,7 +115,8 @@ func DeleteProduct(ctx context.Context, collection *mongo.Collection, id primiti
 func FetchInventoryByProductID(ctx context.Context, id primitive.ObjectID) (types.InventoryResponse, error) {
 	var inventory types.InventoryResponse
 
-	inventoryURL := fmt.Sprintf("http://inventory-service:6000/get/%s", id)
+	inventoryURL := fmt.Sprintf("http://inventory-service:6000/get/%s", id.Hex())
+	fmt.Println(inventoryURL)
 
 	// ✅ Create an HTTP request with context (timeout-safe)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, inventoryURL, nil)
@@ -131,6 +133,7 @@ func FetchInventoryByProductID(ctx context.Context, id primitive.ObjectID) (type
 	}
 	defer resp.Body.Close()
 
+	fmt.Println(resp.StatusCode)
 	if resp.StatusCode != http.StatusOK {
 		return inventory, fmt.Errorf("inventory not found (status: %d)", resp.StatusCode)
 	}
@@ -189,25 +192,25 @@ func CreateInventoryForProduct(id primitive.ObjectID) error {
 
 }
 
-func DeleteInventoryForProduct(id primitive.ObjectID) (error) {
-		inventoryURL := "http://inventory-service:6000/delete"
+func DeleteInventoryForProduct(id primitive.ObjectID) error {
+	inventoryURL := "http://inventory-service:6000/delete"
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-		req , err := http.NewRequestWithContext(ctx , http.MethodDelete , inventoryURL , nil)
-		client := &http.Client{Timeout: 5*time.Second};
-		resp , err := client.Do(req);
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, inventoryURL, nil)
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
 
-		if err != nil {
-			return fmt.Errorf("inventory service unavailable: %v", err)
-		}
-		defer resp.Body.Close()
-	
-		if resp.StatusCode != http.StatusCreated {
-			return fmt.Errorf("inventory creation failed with status: %d", resp.StatusCode)
-		}
-	
-		fmt.Println("✅ Inventory created successfully for product:", id.Hex())
-		return nil
+	if err != nil {
+		return fmt.Errorf("inventory service unavailable: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("inventory creation failed with status: %d", resp.StatusCode)
+	}
+
+	fmt.Println("✅ Inventory created successfully for product:", id.Hex())
+	return nil
 }

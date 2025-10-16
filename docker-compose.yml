@@ -10,6 +10,8 @@ services:
       - "8080:8080"
     environment:
       - PORT=8080
+    env_file:
+      - .env
     networks:
       - microservices-network
     restart: unless-stopped
@@ -29,6 +31,8 @@ services:
       - "4000:4000"
     environment:
       - PORT=4000
+    env_file:
+      - .env
     networks:
       - microservices-network
     restart: unless-stopped
@@ -48,6 +52,8 @@ services:
       - "6000:6000"
     environment:
       - PORT=6000
+    env_file:
+      - .env
     networks:
       - microservices-network
     restart: unless-stopped
@@ -67,6 +73,8 @@ services:
       - "9000:9000"
     environment:
       - PORT=9000
+    env_file:
+      - .env
     networks:
       - microservices-network
     restart: unless-stopped
@@ -86,6 +94,8 @@ services:
       - "7000:7000"
     environment:
       - PORT=7000
+    env_file:
+      - .env
     networks:
       - microservices-network
     restart: unless-stopped
