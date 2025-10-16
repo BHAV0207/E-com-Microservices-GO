@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/BHAV0207/user-service/internal/service"
+	"github.com/BHAV0207/user-service/pkg/kafka"
 	"github.com/BHAV0207/user-service/pkg/models"
 	"github.com/go-playground/validator"
 	"github.com/golang-jwt/jwt"
@@ -51,11 +52,19 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.Collection.InsertOne(ctx, user)
+	res, err := h.Collection.InsertOne(ctx, user)
 	if err != nil {
 		http.Error(w, "Failed to register user", http.StatusInternalServerError)
 		return
 	}
+
+	producer := kafka.NewKafkaProducer("kafka:9092", "user-created")
+	event := map[string]interface{}{
+		"userId": res.InsertedID,
+		"email":  user.Email,
+	}
+
+	producer.Publish(event)
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
