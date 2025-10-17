@@ -21,19 +21,14 @@ func KafkaWriter(brokerURL, topic string) *KafkaProducer {
 	}
 }
 
-type KafkaConsumer struct {
-	Reader *kafka.Reader
-}
-
-func KafkaReader(brokerURL, topic, groupID string) *KafkaConsumer {
-	return &KafkaConsumer{
-		Reader: kafka.NewReader(kafka.ReaderConfig{
-			Brokers: []string{brokerURL},
-			Topic:   topic,
-			GroupID: groupID,
-		}),
-	}
-}
+/*
+KafkaWriter(brokerURL, topic)
+Creates and returns a *KafkaProducer that wraps a configured kafka.Writer.
+kafka.TCP(brokerURL) instructs the writer which broker address to dial (host:port).
+Topic is where messages will be written.
+Balancer: &kafka.LeastBytes{} chooses the partition with the least bytes (a load-balancing strategy).
+RequiredAcks: kafka.RequireAll tells Kafka to wait for acknowledgements from all replicas (strong durability).
+*/
 
 // | Symbol | Meaning                                                                      | Analogy                                                      |
 // | ------ | ---------------------------------------------------------------------------- | ------------------------------------------------------------ |

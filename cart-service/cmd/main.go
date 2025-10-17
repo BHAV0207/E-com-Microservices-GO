@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/BHAV0207/cart-service/internal/events"
 	"github.com/BHAV0207/cart-service/internal/handler"
 	"github.com/BHAV0207/cart-service/internal/repository"
 	"github.com/gorilla/mux"
@@ -24,9 +25,6 @@ func main() {
 	}
 
 	port := os.Getenv("PORT")
-	// if port == "" {
-	// 	port = "9000"
-	// }
 
 	client := repository.ConnectDb(uri)
 	defer func() {
@@ -37,6 +35,19 @@ func main() {
 
 	db := client.Database("CartService")
 	cartHandelder := &handler.CartHandler{Collection: db.Collection("cart")}
+
+	// -------------------------------
+	// Start Kafka Consumer in goroutine
+	// -------------------------------
+	go func() {
+		consumer := events.NewConsumer(
+			"kafka:9092", // e.g., "kafka:9092"
+			"user-created",            // topic
+			"cart-service-group",      // consumer group
+			db.Collection("cart"),     // Mongo collection
+		)
+		consumer.Consume()
+	}()
 
 	router := mux.NewRouter()
 	router.HandleFunc("/addtocart", cartHandelder.AddToCart).Methods("POST")
