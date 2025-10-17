@@ -3,11 +3,12 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
+	"github.com/BHAV0207/user-service/internal/events"
 	"github.com/BHAV0207/user-service/internal/service"
-	"github.com/BHAV0207/user-service/pkg/kafka"
 	"github.com/BHAV0207/user-service/pkg/models"
 	"github.com/go-playground/validator"
 	"github.com/golang-jwt/jwt"
@@ -58,13 +59,14 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	producer := kafka.NewKafkaProducer("kafka:9092", "user-created")
+	producer := events.NewProducer("kafka:9092", "user-created")
 	event := map[string]interface{}{
 		"userId": res.InsertedID,
 		"email":  user.Email,
 	}
-
-	producer.Publish(event)
+	if err := producer.Publish(event); err != nil {
+		log.Printf("⚠️ Failed to publish user-created event: %v", err)
+	}
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
