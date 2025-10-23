@@ -25,6 +25,7 @@ func (h *InventoryHandler) GetInventoryByProducId(w http.ResponseWriter, r *http
 	id, err := primitive.ObjectIDFromHex(idHex)
 	if err != nil {
 		http.Error(w, "id invalid", http.StatusBadRequest)
+		return
 	}
 
 	filter := bson.M{"productId": id}
@@ -54,6 +55,7 @@ func (h *InventoryHandler) CreateInventory(w http.ResponseWriter, r *http.Reques
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid body format provided", http.StatusBadRequest)
+		return
 	}
 
 	if req.ProductId.IsZero() {
@@ -99,6 +101,7 @@ func (h *InventoryHandler) UpdateInventory(w http.ResponseWriter, r *http.Reques
 	id, err := primitive.ObjectIDFromHex(idHex)
 	if err != nil {
 		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
 	}
 
 	var updateFields map[string]interface{}
@@ -132,6 +135,7 @@ func (h *InventoryHandler) DeleteInventory(w http.ResponseWriter, r *http.Reques
 	id, err := primitive.ObjectIDFromHex(idHex)
 	if err != nil {
 		http.Error(w, "id not valid ", http.StatusBadRequest)
+		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -140,6 +144,7 @@ func (h *InventoryHandler) DeleteInventory(w http.ResponseWriter, r *http.Reques
 	delCnt, err := service.DeleteProduct(ctx, h.Collection, id)
 	if err != nil {
 		http.Error(w, "failed to delete the product", http.StatusInternalServerError)
+		return
 	}
 
 	fmt.Fprintf(w, "Deleted %d product(s)", delCnt)

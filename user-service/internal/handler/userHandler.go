@@ -1,7 +1,12 @@
 package handler
 
-import "go.mongodb.org/mongo-driver/mongo"
+import (
+	workerpool "github.com/BHAV0207/user-service/internal/workerPool"
+	"go.mongodb.org/mongo-driver/mongo"
+)
 
 type UserHandler struct {
-    Collection *mongo.Collection
+	Collection      *mongo.Collection
+	UserCreatedPool *workerpool.WorkerPool
+	UserDeletedPool *workerpool.WorkerPool
 }

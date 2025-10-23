@@ -21,7 +21,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_CREATE_TOPICS: "user-created:1:1"  # topic:partitions:replication
+      KAFKA_CREATE_TOPICS: "user-created:1:1,user-deleted:1:1"
     depends_on:
       - zookeeper
     networks:

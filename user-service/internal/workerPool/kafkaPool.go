@@ -6,9 +6,13 @@ import (
 	"github.com/BHAV0207/user-service/internal/events"
 )
 
+// why are we using pool and intead of goroutines , because we cant control the number of go routines , if 1 mill request comes then there will be 1 mill go eutines , whhc will cause cpu overload , in pool we can decide at once how many goroutines will be there working
+
 type Job struct {
 	KafkaEvent map[string]any
 }
+
+//  suppose we have more things other that kafka, we have two opitons either cereate a seperate pool or in the smae pool where we have made the Job stuct there we can pass the function named task which will be genereic function and all the events can define that function and pass that functin
 
 type WorkerPool struct {
 	Jobs     chan Job
@@ -28,7 +32,7 @@ func NewWorkerPool(workerCount int, producer *events.Producer) *WorkerPool {
 }
 
 func (wp *WorkerPool) start() {
-	for i := range wp.Workers {
+	for i := 0; i < wp.Workers; i++ {
 		go func(id int) {
 			for job := range wp.Jobs {
 				if err := wp.Producer.Publish(job.KafkaEvent); err != nil {
@@ -39,6 +43,7 @@ func (wp *WorkerPool) start() {
 			}
 		}(i)
 	}
+
 }
 
 func (wp *WorkerPool) Submit(event map[string]interface{}) {

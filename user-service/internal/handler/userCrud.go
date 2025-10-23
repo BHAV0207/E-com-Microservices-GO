@@ -83,6 +83,7 @@ func (h *UserHandler) UpdateUserDetails(w http.ResponseWriter, r *http.Request) 
 	fmt.Fprintf(w, "Updated %d user(s)", modifiedCnt)
 
 }
+
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idHex := vars["id"]
@@ -101,5 +102,11 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
 		return
 	}
+
+	event := map[string]any{
+		"userId": id,
+	}
+	h.UserDeletedPool.Submit(event) // goes to user-deleted topic
+
 	fmt.Fprintf(w, "Deleted %d user(s)", delCnt)
 }
