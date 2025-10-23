@@ -39,19 +39,32 @@ func main() {
 	// -------------------------------
 	// Start Kafka Consumer in goroutine
 	// -------------------------------
+	// 1️⃣ User-Created Consumer
 	go func() {
 		consumer := events.NewConsumer(
-			"kafka:9092", // e.g., "kafka:9092"
-			"user-created",            // topic
-			"cart-service-group",      // consumer group
-			db.Collection("cart"),     // Mongo collection
+			"kafka:9092",
+			"user-created",
+			"cart-service-user-created-group",
+			db.Collection("cart"),
 		)
-		consumer.Consume()
+		consumer.ConsumeUserCreated()
+	}()
+
+	// 2️⃣ User-Deleted Consumer
+	go func() {
+		consumer := events.NewConsumer(
+			"kafka:9092",
+			"user-deleted",
+			"cart-service-user-deleted-group",
+			db.Collection("cart"),
+		)
+		consumer.ConsumeUserDeleted()
 	}()
 
 	router := mux.NewRouter()
 	router.HandleFunc("/addtocart", cartHandelder.AddToCart).Methods("POST")
 	router.HandleFunc("/user/{id}", cartHandelder.GetUsersCartById).Methods("GET")
+	router.HandleFunc("/delete/{id}", cartHandelder.DeleteCartByUserId).Methods("DELETE")
 
 	fmt.Println("Server listening on http://localhost:%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))

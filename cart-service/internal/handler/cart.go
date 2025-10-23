@@ -90,3 +90,27 @@ func (h *CartHandler) GetUsersCartById(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(cart)
 
 }
+
+func (h *CartHandler) DeleteCartByUserId(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	idHex := vars["id"]
+
+	id, err := primitive.ObjectIDFromHex(idHex)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	delCnt, err := service.DeleteCart(ctx, h.Collection, id)
+
+	if delCnt == 0 {
+		http.Error(w, "No cart found for given user ID", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "🗑️ Successfully deleted %d cart(s) for user %s", delCnt, id.Hex())
+}

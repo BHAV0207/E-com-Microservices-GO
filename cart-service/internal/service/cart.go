@@ -161,9 +161,16 @@ func GetUserCart(ctx context.Context, collection *mongo.Collection, userId primi
 	return expandedCart, nil
 }
 
-
 func CreateCart(ctx context.Context, collection *mongo.Collection, cart pkg.Cart) error {
 	_, err := collection.InsertOne(ctx, cart)
 	return err
 }
 
+func DeleteCart(ctx context.Context, collection *mongo.Collection, userID primitive.ObjectID) (int, error) {
+	result, err := collection.DeleteOne(ctx, bson.M{"userId": userID})
+	if err != nil {
+		return 0, err
+	}
+
+	return int(result.DeletedCount), nil
+}
