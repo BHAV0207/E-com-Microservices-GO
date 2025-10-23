@@ -26,7 +26,7 @@ func NewConsumer(brokerURL, topics, groupID string, collection *mongo.Collection
 	return &Consumer{
 		KafkaConsumer: KafkaReader(brokerURL, topics, groupID),
 		Collection:    collection,
-	}
+	} 
 }
 
 func (c *Consumer) Consume() {

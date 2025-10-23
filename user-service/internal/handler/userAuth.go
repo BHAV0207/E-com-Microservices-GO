@@ -9,12 +9,14 @@ import (
 
 	"github.com/BHAV0207/user-service/internal/events"
 	"github.com/BHAV0207/user-service/internal/service"
+	workerpool "github.com/BHAV0207/user-service/internal/workerPool"
 	"github.com/BHAV0207/user-service/pkg/models"
 	"github.com/go-playground/validator"
 	"github.com/golang-jwt/jwt"
 )
 
 var validate = validator.New()
+var kafkaPool *workerpool.WorkerPool
 
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var user models.User
@@ -60,13 +62,19 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	producer := events.NewProducer("kafka:9092", "user-created")
-	event := map[string]interface{}{
+	kafkaPool = workerpool.NewWorkerPool(10, producer) // 10 workers
+	log.Println("🚀 Kafka worker pool started with 10 workers")
+
+	event := map[string]any{
 		"userId": res.InsertedID,
 		"email":  user.Email,
 	}
-	if err := producer.Publish(event); err != nil {
-		log.Printf("⚠️ Failed to publish user-created event: %v", err)
-	}
+
+	go kafkaPool.Submit(event) // non-blocking submission
+
+	// if err := producer.Publish(event); err != nil {
+	// 	log.Printf("⚠️ Failed to publish user-created event: %v", err)
+	// }
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
@@ -75,7 +83,6 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 // LOGIN -->
-
 var jwtKey = []byte("your_secret_key")
 
 type LoginRequest struct {
