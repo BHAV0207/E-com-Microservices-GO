@@ -44,7 +44,7 @@ func (wp *WorkerPool) start() {
 		}(i)
 	}
 
-}
+}	
 
 func (wp *WorkerPool) Submit(event map[string]interface{}) {
 	wp.Jobs <- Job{KafkaEvent: event}

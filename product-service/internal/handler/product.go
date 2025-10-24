@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/BHAV0207/product-service/internal/service"
+	workerpool "github.com/BHAV0207/product-service/internal/workerPool"
 	"github.com/BHAV0207/product-service/pkg/models"
 	"github.com/BHAV0207/product-service/pkg/types"
 	"github.com/go-playground/validator/v10"
@@ -19,6 +20,7 @@ import (
 
 type ProductHandler struct {
 	Collection *mongo.Collection
+	Pool       *workerpool.WorkerPool
 }
 
 var validate = validator.New()
@@ -46,11 +48,12 @@ func (h *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go func(productId primitive.ObjectID) {
-		if err := service.CreateInventoryForProduct(productId); err != nil {
-			fmt.Printf("⚠️ Failed to create inventory for product %s: %v\n", productId.Hex(), err)
-		}
-	}(id)
+	h.Pool.Submit(workerpool.Job{
+		ProductId: id.Hex(),
+		Action: func() error {
+			return service.CreateInventoryForProduct(id)
+		},
+	})
 
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "Inserted product with ID: %v", id)

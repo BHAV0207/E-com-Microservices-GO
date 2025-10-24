@@ -9,6 +9,7 @@ import (
 
 	"github.com/BHAV0207/product-service/internal/handler"
 	"github.com/BHAV0207/product-service/internal/repository"
+	workerpool "github.com/BHAV0207/product-service/internal/workerPool"
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
@@ -40,11 +41,17 @@ func main() {
 
 	db := client.Database("ProductService")
 
-	productHandler := &handler.ProductHandler{Collection: db.Collection("products")}
+	pool := workerpool.NewWorkerPool(10)
+	defer pool.Shutdown()
+
+	productHandler := &handler.ProductHandler{
+		Collection: db.Collection("products"),
+		Pool:       pool,
+	}
 
 	router := mux.NewRouter()
 
-	router.HandleFunc("/add", productHandler.CreateProduct).Methods("POST")
+	router.HandleFunc("/create", productHandler.CreateProduct).Methods("POST")
 	router.HandleFunc("/delete/{id}", productHandler.DeleteProduct).Methods("DELETE")
 	router.HandleFunc("/update/{id}", productHandler.UpdateProduct).Methods("PUT")
 	router.HandleFunc("/get", productHandler.GetAllProducts).Methods("GET")
