@@ -24,9 +24,6 @@ func main() {
 	}
 
 	port := os.Getenv("PORT")
-	// if port == "" {
-	// 	port = "6000"
-	// }
 
 	client := repository.ConnectDb(uri)
 	defer func() {

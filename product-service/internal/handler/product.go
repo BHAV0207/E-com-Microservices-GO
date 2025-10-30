@@ -26,7 +26,6 @@ type ProductHandler struct {
 var validate = validator.New()
 
 func (h *ProductHandler) CreateProduct(w http.ResponseWriter, r *http.Request) {
-
 	var product models.Product
 	if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
 		http.Error(w, "Invalid rewuest body", http.StatusBadRequest)

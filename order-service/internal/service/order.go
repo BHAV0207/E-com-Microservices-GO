@@ -37,6 +37,72 @@ func ValidateUser(id primitive.ObjectID) bool {
 	return resp.StatusCode == http.StatusOK
 }
 
+/*
+🧩 resp.Body — what it actually is
+When you make an HTTP request like:
+resp, err := http.Get(url)
+The returned resp is of type *http.Response, and its Body field is an io.ReadCloser — meaning:
+You can read from it (like a stream of bytes).
+You must close it when you’re done.
+
+
+⚙️ Why you must call defer resp.Body.Close()
+Because every HTTP response keeps a network connection (TCP socket) open until you close the body.
+If you don’t close it:
+The connection stays open in the pool.
+Eventually you’ll run out of file descriptors or sockets.
+Future HTTP calls can hang or fail with too many open files or connection reset errors.
+*/
+
+func ValidateProduct(id primitive.ObjectID, price float64) bool {
+	url := fmt.Sprintf("http://product-service:4000/get/%s", id.Hex())
+	resp, err := http.Get(url)
+
+	if err != nil {
+		fmt.Println("Error contacting the productService", err)
+		return false
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+	} else {
+		fmt.Println("product Service response body:", string(body))
+	}
+	fmt.Println(body)
+
+	//cross checking the price logic is left
+
+	fmt.Println("product Service status code:", resp.StatusCode)
+	return resp.StatusCode == http.StatusOK
+}
+
+func ValidateInventory(id primitive.ObjectID) bool {
+	url := fmt.Sprintf("http://inventory-service:6000/get/%s", id.Hex())
+	resp, err := http.Get(url)
+
+	if err != nil {
+		fmt.Println("Error contacting inventory service", err)
+		return false
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
+	} else {
+		fmt.Println("product Service response body:", string(body))
+	}
+
+	fmt.Println(body)
+
+	fmt.Println("product Service status code:", resp.StatusCode)
+	return resp.StatusCode == http.StatusOK
+}
+
 func ValidateCartAndGetItems(id primitive.ObjectID) ([]map[string]interface{}, bool) {
 	url := fmt.Sprintf("http://cart-service:9000/user/%s", id.Hex())
 	fmt.Println("Calling Cart service with URL:", url)

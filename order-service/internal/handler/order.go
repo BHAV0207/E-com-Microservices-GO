@@ -67,6 +67,15 @@ func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		// Convert price
 		priceFloat, _ := it["price"].(float64)
 
+		if err := service.ValidateProduct(productId, priceFloat); err != true {
+			fmt.Println("product not vlaid or price have been changed")
+			return
+		}
+		if err := service.ValidateInventory(productId); err != true {
+			fmt.Println("inventory issues")
+			return
+		}
+
 		orderItems = append(orderItems, models.OrderItems{
 			ProductId: productId,
 			Quantity:  quantity,

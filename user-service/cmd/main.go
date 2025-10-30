@@ -38,13 +38,12 @@ func main() {
 	   Submit only writes to the channel. The workers already read from it in goroutines.
 	   Wrapping it in go is redundant.
 	*/
-  userCreatedProducer := events.NewProducer("kafka:9092", "user-created")
-    userCreatedPool = workerpool.NewWorkerPool(10, userCreatedProducer)
+	userCreatedProducer := events.NewProducer("kafka:9092", "user-created")
+	userCreatedPool = workerpool.NewWorkerPool(10, userCreatedProducer)
 
-    userDeletedProducer := events.NewProducer("kafka:9092", "user-deleted")
-    userDeletedPool = workerpool.NewWorkerPool(10, userDeletedProducer)
+	userDeletedProducer := events.NewProducer("kafka:9092", "user-deleted")
+	userDeletedPool = workerpool.NewWorkerPool(10, userDeletedProducer)
 
- 
 	// ✅ Load environment variables
 	err := godotenv.Load() // Only for local dev, safe to ignore in prod
 	if err != nil {
@@ -70,13 +69,13 @@ func main() {
 	}()
 
 	db := client.Database("UserService")
+
 	userHandler := &handler.UserHandler{
-		Collection:       db.Collection("users"),
-		UserCreatedPool:  userCreatedPool,
-		UserDeletedPool:  userDeletedPool,
-}
-
-
+		Collection:      db.Collection("users"),
+		UserCreatedPool: userCreatedPool,
+		UserDeletedPool: userDeletedPool,
+	}
+															
 	// ✅ Router setup
 	router := mux.NewRouter()
 

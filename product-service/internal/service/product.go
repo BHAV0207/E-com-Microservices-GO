@@ -208,9 +208,9 @@ func DeleteInventoryForProduct(id primitive.ObjectID) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("inventory creation failed with status: %d", resp.StatusCode)
+		return fmt.Errorf("inventory Deletion failed with status: %d", resp.StatusCode)
 	}
 
-	fmt.Println("✅ Inventory created successfully for product:", id.Hex())
+	fmt.Println("✅ Inventory Deleted successfully for product:", id.Hex())
 	return nil
 }
