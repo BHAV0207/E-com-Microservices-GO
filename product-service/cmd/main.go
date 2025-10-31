@@ -56,7 +56,7 @@ func main() {
 	router.HandleFunc("/update/{id}", productHandler.UpdateProduct).Methods("PUT")
 	router.HandleFunc("/get", productHandler.GetAllProducts).Methods("GET")
 	router.HandleFunc("/get/{id}", productHandler.GetProductById).Methods("GET")
-	router.HandleFunc("/get/user/{userId}", productHandler.GetProductsByUserId).Methods("GET")
+	// router.HandleFunc("/get/user/{userId}", productHandler.GetProductsByUserId).Methods("GET")
 
 	fmt.Println("Server listening on http://localhost:%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))

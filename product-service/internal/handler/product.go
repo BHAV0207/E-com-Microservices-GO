@@ -130,28 +130,28 @@ func (h *ProductHandler) GetProductById(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(response)
 }
 
-func (h *ProductHandler) GetProductsByUserId(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idHex := vars["userId"]
-	fmt.Println(idHex)
-	id, err := primitive.ObjectIDFromHex(idHex)
-	fmt.Println(id)
-	if err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-	}
+// func (h *ProductHandler) GetProductsByUserId(w http.ResponseWriter, r *http.Request) {
+// 	vars := mux.Vars(r)
+// 	idHex := vars["userId"]
+// 	fmt.Println(idHex)
+// 	id, err := primitive.ObjectIDFromHex(idHex)
+// 	fmt.Println(id)
+// 	if err != nil {
+// 		http.Error(w, "invalid request body", http.StatusBadRequest)
+// 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+// 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+// 	defer cancel()
 
-	products, err := service.GetByUserId(ctx, h.Collection, id)
-	if err != nil {
-		http.Error(w, "Failed to fetch products: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+// 	products, err := service.GetByUserId(ctx, h.Collection, id)
+// 	if err != nil {
+// 		http.Error(w, "Failed to fetch products: "+err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
 
-	w.Header().Set("Content-Type", "application/json") // Tell client: "I’m sending JSON"
-	json.NewEncoder(w).Encode(products)
-}
+// 	w.Header().Set("Content-Type", "application/json") // Tell client: "I’m sending JSON"
+// 	json.NewEncoder(w).Encode(products)
+// }
 
 func (h *ProductHandler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)

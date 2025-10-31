@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github/BHAV0207/order-service/pkg/models"
 	"io"
+	"math"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -57,6 +58,7 @@ Future HTTP calls can hang or fail with too many open files or connection reset 
 func ValidateProduct(id primitive.ObjectID, price float64) bool {
 	url := fmt.Sprintf("http://product-service:4000/get/%s", id.Hex())
 	resp, err := http.Get(url)
+	fmt.Println(price , "from service file")
 
 	if err != nil {
 		fmt.Println("Error contacting the productService", err)
@@ -71,15 +73,36 @@ func ValidateProduct(id primitive.ObjectID, price float64) bool {
 	} else {
 		fmt.Println("product Service response body:", string(body))
 	}
-	fmt.Println(body)
 
-	//cross checking the price logic is left
+	var data map[string]any
+	if err := json.Unmarshal(body, &data); err != nil {
+		fmt.Println("❌ Error parsing product JSON:", err)
+		return false
+	}
+
+	productData, ok := data["product"].(map[string]interface{})
+	if !ok {
+		fmt.Println("❌ product key missing or invalid")
+		return false
+	}
+
+	priceVal, ok := productData["price"].(float64)
+	if !ok {
+		fmt.Println("❌ price value missing or invalid type")
+		return false
+	}
+
+	const epsilon = 0.01
+	if math.Abs(priceVal-price) > epsilon {
+		fmt.Printf("❌ Price mismatch: expected %.2f, got %.2f\n", priceVal, price)
+		return false
+	}
 
 	fmt.Println("product Service status code:", resp.StatusCode)
 	return resp.StatusCode == http.StatusOK
 }
 
-func ValidateInventory(id primitive.ObjectID) bool {
+func ValidateInventory(id primitive.ObjectID, quantity int64) bool {
 	url := fmt.Sprintf("http://inventory-service:6000/get/%s", id.Hex())
 	resp, err := http.Get(url)
 
@@ -97,7 +120,23 @@ func ValidateInventory(id primitive.ObjectID) bool {
 		fmt.Println("product Service response body:", string(body))
 	}
 
-	fmt.Println(body)
+	var data map[string]any
+	if err := json.Unmarshal(body, &data); err != nil {
+		fmt.Println("❌ Error parsing product JSON:", err)
+		return false
+	}
+
+	stock, ok := data["inventory"].(float64)
+	if !ok {
+		fmt.Println("❌ stock value missing or invalid type")
+		return false
+	}
+
+	if stock < float64(quantity) {
+		fmt.Println("insuffecient stock")
+		return false
+	}
+	fmt.Println(data)
 
 	fmt.Println("product Service status code:", resp.StatusCode)
 	return resp.StatusCode == http.StatusOK

@@ -64,18 +64,35 @@ func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		quantityFloat, _ := it["quantity"].(float64)
 		quantity := int64(quantityFloat)
 
-		// Convert price
-		priceFloat, _ := it["price"].(float64)
+		// ✅ Extract price from nested product object
+		var priceFloat float64
+		if productMap, ok := it["product"].(map[string]any); ok {
+			if priceVal, ok := productMap["price"].(float64); ok {
+				priceFloat = priceVal
+			} else {
+				fmt.Println("⚠️ Price not found or invalid type in product object")
+				priceFloat = 0
+			}
+		} else {
+			fmt.Println("⚠️ Product field missing in cart item")
+			priceFloat = 0
+		}
 
-		if err := service.ValidateProduct(productId, priceFloat); err != true {
-			fmt.Println("product not vlaid or price have been changed")
+		fmt.Println(priceFloat, "parsed ✅")
+
+		// Validate product
+		if !service.ValidateProduct(productId, priceFloat) {
+			fmt.Println("❌ Product not valid or price changed")
 			return
 		}
-		if err := service.ValidateInventory(productId); err != true {
-			fmt.Println("inventory issues")
+
+		// Validate inventory
+		if !service.ValidateInventory(productId, quantity) {
+			fmt.Println("❌ Inventory issue")
 			return
 		}
 
+		// Add to order items
 		orderItems = append(orderItems, models.OrderItems{
 			ProductId: productId,
 			Quantity:  quantity,

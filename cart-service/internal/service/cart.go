@@ -47,7 +47,6 @@ func ValidateProduct(id string, quantity int64) bool {
 	}
 	defer resp.Body.Close()
 
-	// Read the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("❌ Error reading product service response body:", err)
@@ -55,24 +54,39 @@ func ValidateProduct(id string, quantity int64) bool {
 	}
 	fmt.Println("✅ Product Service response body:", string(body))
 
-	var data map[string]any
+	var data map[string]interface{}
 	if err := json.Unmarshal(body, &data); err != nil {
 		fmt.Println("❌ Error parsing JSON:", err)
 		return false
 	}
 
-	availableQty := int64(data["inventory"].(float64))
+	// ✅ Extract nested "inventory" map
+	invMap, ok := data["inventory"].(map[string]interface{})
+	if !ok {
+		fmt.Println("❌ inventory key missing or invalid type")
+		return false
+	}
 
+	// ✅ Extract inventory count
+	invVal, ok := invMap["inventory"].(float64)
+	if !ok {
+		fmt.Println("❌ inventory value missing or invalid type")
+		return false
+	}
+	availableQty := int64(invVal)
+
+	// ✅ Compare available vs requested
 	if availableQty < quantity {
-		fmt.Println("❌ Not enough stock available")
+		fmt.Printf("❌ Not enough stock available (have %d, want %d)\n", availableQty, quantity)
 		return false
 	}
 
 	fmt.Println("✅ Sufficient stock available")
-
 	fmt.Println("Product Service status code:", resp.StatusCode)
+
 	return resp.StatusCode == http.StatusOK
 }
+
 
 // AddItemToCart adds a product to a user's cart or updates quantity if it already exists
 func AddItemToCart(ctx context.Context, collection *mongo.Collection, userId, productId primitive.ObjectID, quantity int64) error {
