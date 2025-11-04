@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 
-	"github/BHAV0207/order-service/internal/handler"
 	"github/BHAV0207/order-service/internal/repository"
 
 	"github.com/gorilla/mux"
@@ -37,7 +36,13 @@ func main() {
 	}()
 
 	db := client.Database("OrderService")
-	OrderHnadler := &handler.OrderHnadler{Collection: db.Collection("order")}
+
+	consumer := event.NewConsumer(kafkaBroker, "payment-events", "order-service-group")
+	orderConsumer := &event.OrderConsumer{
+		Collection: orderCollection,
+		Kafka:      consumer.KafkaConsumer,
+	}
+
 	router := mux.NewRouter()
 
 	router.HandleFunc("/order", OrderHnadler.CreateOrder).Methods("POST")

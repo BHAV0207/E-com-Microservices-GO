@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -58,7 +60,7 @@ Future HTTP calls can hang or fail with too many open files or connection reset 
 func ValidateProduct(id primitive.ObjectID, price float64) bool {
 	url := fmt.Sprintf("http://product-service:4000/get/%s", id.Hex())
 	resp, err := http.Get(url)
-	fmt.Println(price , "from service file")
+	fmt.Println(price, "from service file")
 
 	if err != nil {
 		fmt.Println("Error contacting the productService", err)
@@ -215,4 +217,35 @@ func GetAllOrderOfUser(ctx context.Context, collection *mongo.Collection, id pri
 
 	return orders, nil
 
+}
+
+// CallPaymentService sends payment initiation request from Order → Payment Service (HTTP)
+func CallPaymentService(paymentReq map[string]any) error {
+	url := "http://payment-service:7000/payments" // 👈 Adjust to your Payment Service URL
+
+	jsonData, err := json.Marshal(paymentReq)
+	if err != nil {
+		return fmt.Errorf("failed to marshal payment request: %v", err)
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create HTTP request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("payment service call failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// If the Payment Service doesn’t return 201 or 200, treat as error
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
+		return errors.New("payment service returned non-success: " + resp.Status)
+	}
+
+	fmt.Println("💳 Payment initiated successfully with Payment Service")
+	return nil
 }

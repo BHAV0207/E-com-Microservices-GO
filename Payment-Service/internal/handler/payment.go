@@ -12,7 +12,6 @@ import (
 	"github.com/goccy/go-json"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	// "golang.org/x/text/cmd/gotext/examples/extract_http/pkg"
 )
 
 type PaymentHandler struct {

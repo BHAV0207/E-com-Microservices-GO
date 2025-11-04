@@ -26,6 +26,13 @@ type CreateOrderRequest struct {
 }
 
 func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	// validate user
+	// validate cart
+	// validate products and inventory
+	// create order
+	// call payment service
+	// insert into db
+	// respond
 
 	var req CreateOrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -40,6 +47,7 @@ func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// validating the user
 	if !service.ValidateUser(userId) {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
@@ -132,6 +140,21 @@ func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to create order", http.StatusInternalServerError)
 		return
 	}
+
+	paymentReq := map[string]any{
+		"orderId":     order.Id.Hex(),
+		"userId":      req.UserId,
+		"amount":      order.Total,
+		"paymentInfo": req.PaymentInfo,
+	}
+
+	err = service.CallPaymentService(paymentReq)
+	if err != nil {
+		http.Error(w, "Payment service error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	
 
 	// 6️⃣ Respond with created order
 	w.Header().Set("Content-Type", "application/json")
