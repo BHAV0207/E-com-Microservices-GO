@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func ValidateUser(ctx context.Context, id primitive.ObjectID) bool {
+func ValidateUser(ctx context.Context, id string) bool {
 	uri := "http://user-service:8080/users/"
 
-	userUrl := fmt.Sprintf("%s%s", uri, id.Hex())
+	userUrl := fmt.Sprintf("%s%s", uri, id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, userUrl, nil)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
@@ -34,10 +32,10 @@ func ValidateUser(ctx context.Context, id primitive.ObjectID) bool {
 	return true
 }
 
-func ValidateOrder(ctx context.Context, id primitive.ObjectID) bool {
+func ValidateOrder(ctx context.Context, id string) bool {
 	uri := "http://order-service:7000/orders/"
 
-	orderUrl := fmt.Sprintf("%s%s", uri, id.Hex())
+	orderUrl := fmt.Sprintf("%s%s", uri, id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, orderUrl, nil)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
@@ -57,4 +55,11 @@ func ValidateOrder(ctx context.Context, id primitive.ObjectID) bool {
 		return false
 	}
 	return true
+}
+
+func ProcessPayment(ctx context.Context, orderId string, amount float64, method string) bool {
+	// Simulate payment processing logic
+	time.Sleep(2 * time.Second) // Simulating processing delay
+	// In real scenario, integrate with payment gateway here
+	return true // Assume payment is always successful for this example
 }

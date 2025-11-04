@@ -3,8 +3,11 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 
+	"github.com/BHAV0207/Product-service/internal/event"
+	"github.com/BHAV0207/Product-service/internal/handler"
 	"github.com/BHAV0207/Product-service/internal/repository"
 	"github.com/joho/godotenv"
 )
@@ -31,5 +34,17 @@ func main() {
 		}
 	}()
 
-	// db := client.Database("PaymentService")
+	db := client.Database("PaymentService")
+	collection := db.Collection("payments")
+
+	producer := event.NewProducer("kafka:9092", "payment-events")
+
+	paymentHandler := &handler.PaymentHandler{
+		Collection: collection,
+		Producer:   producer,
 	}
+	http.HandleFunc("/payments", paymentHandler.PaymentCreation)
+
+	log.Println("🚀 Payment Service running on :3000")
+	http.ListenAndServe(":3000", nil)
+}
