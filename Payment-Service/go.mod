@@ -3,6 +3,7 @@ module github.com/BHAV0207/Product-service
 go 1.24.1
 
 require (
+	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect

@@ -1,4 +1,4 @@
-package events
+package event
 
 import (
 	"context"
@@ -36,5 +36,5 @@ func (p *Producer) Publish(event interface{}) error {
 
 	log.Printf("✅ Published event to Kafka: %s", string(data))
 	return nil
-
+	
 }
