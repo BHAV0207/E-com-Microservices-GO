@@ -221,7 +221,7 @@ func GetAllOrderOfUser(ctx context.Context, collection *mongo.Collection, id pri
 
 // CallPaymentService sends payment initiation request from Order → Payment Service (HTTP)
 func CallPaymentService(paymentReq map[string]any) error {
-	url := "http://payment-service:7000/payments" // 👈 Adjust to your Payment Service URL
+	url := "http://payment-service:3000/payments" // 👈 Adjust to your Payment Service URL
 
 	jsonData, err := json.Marshal(paymentReq)
 	if err != nil {

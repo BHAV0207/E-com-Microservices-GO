@@ -33,7 +33,7 @@ func ValidateUser(ctx context.Context, id string) bool {
 }
 
 func ValidateOrder(ctx context.Context, id string) bool {
-	uri := "http://order-service:7000/orders/"
+	uri := "http://order-service:7000/order/"
 
 	orderUrl := fmt.Sprintf("%s%s", uri, id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, orderUrl, nil)

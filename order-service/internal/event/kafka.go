@@ -15,3 +15,4 @@ func KafkaReader(brokerUrl , topic , groupID string) *KafkaConsumer {
 		}),
 	}
 }
+

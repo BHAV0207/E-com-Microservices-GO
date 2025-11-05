@@ -60,7 +60,7 @@ func (h *PaymentHandler) PaymentCreation(w http.ResponseWriter, r *http.Request)
 		defer func() {
 			if r := recover(); r != nil {
 				orderValid = false
-			}
+			} 
 		}()
 		orderValid = service.ValidateOrder(ctx, reqBody.OrderID)
 	}()
