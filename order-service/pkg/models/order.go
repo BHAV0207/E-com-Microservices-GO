@@ -7,13 +7,14 @@ import (
 )
 
 type Order struct {
-	Id        primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
-	UserId    primitive.ObjectID `bson:"userId" json:"userId"`
-	Items     []OrderItems       `bson:"products" json:"products"`
-	Address   string             `bson:"address" json:"address"`
-	Status    string             `bson:"status" json:"status"`
-	CreatedAt time.Time          `bson:"createdAt" json:"createdAt"`
-	Total     float64            `bson:"total" json:"total"`
+	Id            primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
+	UserId        primitive.ObjectID `bson:"userId" json:"userId"`
+	Items         []OrderItems       `bson:"products" json:"products"`
+	Address       string             `bson:"address" json:"address"`
+	Status        string             `bson:"status" json:"status"`
+	CreatedAt     time.Time          `bson:"createdAt" json:"createdAt"`
+	Total         float64            `bson:"total" json:"total"`
+	ReservationId string             `bson:"reservationId" json:"reservationId"`
 }
 
 type OrderItems struct {

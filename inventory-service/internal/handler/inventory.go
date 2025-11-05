@@ -150,3 +150,66 @@ func (h *InventoryHandler) DeleteInventory(w http.ResponseWriter, r *http.Reques
 	fmt.Fprintf(w, "Deleted %d product(s)", delCnt)
 
 }
+
+func (h *InventoryHandler) ReserveInventory(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		OrderId string                   `json:"orderId"`
+		Items   []models.ReservationItem `json:"items"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.OrderId == "" || len(req.Items) == 0 {
+		http.Error(w, "Missing orderId or items", http.StatusBadRequest)
+		return
+	}
+
+	context, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	for _, item := range req.Items {
+		prodId, _ := primitive.ObjectIDFromHex(item.ProductId)
+		var inventory models.Inventory
+
+		err := h.Collection.FindOne(context, bson.M{"productId": prodId}).Decode(&inventory)
+		if err != nil {
+			http.Error(w, "Product not found: "+item.ProductId, http.StatusNotFound)
+			return
+		}
+
+		if inventory.Inventory < item.Quantity {
+			http.Error(w, "Insufficient inventory for product: "+item.ProductId, http.StatusConflict)
+			return
+		}
+	}
+
+	reservation := models.Reservation{
+		ID:            primitive.NewObjectID(),
+		ReservationID: primitive.NewObjectID().Hex(),
+		OrderID:       req.OrderId,
+		Status:        "PENDING",
+		Items:         req.Items,
+		ExpiresAt:     time.Now().Add(15 * time.Minute),
+		CreatedAt:     time.Now(),
+	}
+
+	resCol := h.Collection.Database().Collection("reservations")
+	_, err := resCol.InsertOne(context, reservation)
+	if err != nil {
+		http.Error(w, "Failed to create reservation: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]any{
+		"success":       true,
+		"reservationId": reservation.ReservationID,
+		"expiresAt":     reservation.ExpiresAt,
+		"message":       "Reservation created successfully",
+	})
+
+}

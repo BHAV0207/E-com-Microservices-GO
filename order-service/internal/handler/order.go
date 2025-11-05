@@ -26,13 +26,6 @@ type CreateOrderRequest struct {
 }
 
 func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	// validate user
-	// validate cart
-	// validate products and inventory
-	// create order
-	// call payment service
-	// insert into db
-	// respond
 
 	var req CreateOrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -62,6 +55,8 @@ func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	var orderItems []models.OrderItems
 	var total float64 = 0
+
+	var reserveItems []map[string]any
 
 	for _, it := range cartItemsSlice {
 		// Convert productId
@@ -108,6 +103,10 @@ func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		})
 
 		total += priceFloat * float64(quantity)
+		reserveItems = append(reserveItems, map[string]any{
+			"productId": productId.Hex(),
+			"quantity":  quantity,
+		})
 	}
 
 	if len(orderItems) == 0 {
@@ -121,6 +120,13 @@ func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Address is required", http.StatusBadRequest)
 		return
 	}
+
+	reservationId, err := service.CallInventoryReserveAPI(primitive.NewObjectID().Hex(), reserveItems)
+	if err != nil {
+		http.Error(w, "Failed to reserve stock: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	fmt.Println("✅ Stock reserved, reservationId:", reservationId)
 
 	// 4️⃣ Create order object
 	order := models.Order{
@@ -141,11 +147,13 @@ func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Call Payment Service
 	paymentReq := map[string]any{
-		"orderId":     order.Id.Hex(),
-		"userId":      req.UserId,
-		"amount":      order.Total,
-		"paymentInfo": req.PaymentInfo,
+		"orderId":       order.Id.Hex(),
+		"userId":        req.UserId,
+		"amount":        order.Total,
+		"paymentInfo":   req.PaymentInfo,
+		"reservationId": reservationId,
 	}
 
 	err = service.CallPaymentService(paymentReq)
@@ -153,8 +161,6 @@ func (h *OrderHnadler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Payment service error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	
 
 	// 6️⃣ Respond with created order
 	w.Header().Set("Content-Type", "application/json")

@@ -249,3 +249,36 @@ func CallPaymentService(paymentReq map[string]any) error {
 	fmt.Println("💳 Payment initiated successfully with Payment Service")
 	return nil
 }
+
+// CallInventoryReserveAPI sends inventory reservation request from Order → Inventory Service (HTTP)
+func CallInventoryReserveAPI(orderId string, items []map[string]any) (string, error) {
+	url := "http://inventory-service:6000/api/inventory/reserve"
+
+	body := map[string]any{
+		"orderId": orderId,
+		"items":   items,
+	}
+
+	jsonBody, _ := json.Marshal(body)
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	res, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("inventory service not reachable: %v", err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("inventory reserve failed with status: %v", res.Status)
+	}
+
+	var resBody map[string]any
+	if err := json.NewDecoder(res.Body).Decode(&resBody); err != nil {
+		return "", fmt.Errorf("invalid response from inventory")
+	}
+
+	reservationId, _ := resBody["reservationId"].(string)
+	return reservationId, nil
+}
