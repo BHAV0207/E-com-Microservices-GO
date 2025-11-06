@@ -252,7 +252,7 @@ func CallPaymentService(paymentReq map[string]any) error {
 
 // CallInventoryReserveAPI sends inventory reservation request from Order → Inventory Service (HTTP)
 func CallInventoryReserveAPI(orderId string, items []map[string]any) (string, error) {
-	url := "http://inventory-service:6000/api/inventory/reserve"
+	url := "http://inventory-service:6000/reserve"
 
 	body := map[string]any{
 		"orderId": orderId,
@@ -270,7 +270,7 @@ func CallInventoryReserveAPI(orderId string, items []map[string]any) (string, er
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusCreated {
 		return "", fmt.Errorf("inventory reserve failed with status: %v", res.Status)
 	}
 

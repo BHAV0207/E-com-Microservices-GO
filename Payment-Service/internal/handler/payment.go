@@ -20,10 +20,11 @@ type PaymentHandler struct {
 }
 
 type OrderRequestBody struct {
-	OrderID string  `json:"orderId"`
-	UserID  string  `json:"userId"`
-	Amount  float64 `json:"amount"`
-	Method  string  `json:"method"`
+	OrderID       string  `json:"orderId"`
+	UserID        string  `json:"userId"`
+	ReservationID string  `json:"reservationId"`
+	Amount        float64 `json:"amount"`
+	Method        string  `json:"method"`
 }
 
 func (h *PaymentHandler) PaymentCreation(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +61,7 @@ func (h *PaymentHandler) PaymentCreation(w http.ResponseWriter, r *http.Request)
 		defer func() {
 			if r := recover(); r != nil {
 				orderValid = false
-			} 
+			}
 		}()
 		orderValid = service.ValidateOrder(ctx, reqBody.OrderID)
 	}()
@@ -99,12 +100,13 @@ func (h *PaymentHandler) PaymentCreation(w http.ResponseWriter, r *http.Request)
 	if !paymentSuccess {
 		h.Collection.InsertOne(ctx, payment)
 		_ = h.Producer.Publish(event.PaymentEvent{
-			OrderID:   reqBody.OrderID,
-			UserID:    reqBody.UserID,
-			Amount:    reqBody.Amount,
-			Method:    reqBody.Method,
-			Status:    "failure",
-			Timestamp: time.Now(),
+			OrderID:       reqBody.OrderID,
+			UserID:        reqBody.UserID,
+			ReservationID: reqBody.ReservationID,
+			Amount:        reqBody.Amount,
+			Method:        reqBody.Method,
+			Status:        "failure",
+			Timestamp:     time.Now(),
 		})
 		http.Error(w, "Payment processing failed", http.StatusInternalServerError)
 		return
@@ -118,12 +120,13 @@ func (h *PaymentHandler) PaymentCreation(w http.ResponseWriter, r *http.Request)
 	}
 
 	_ = h.Producer.Publish(event.PaymentEvent{
-		OrderID:   reqBody.OrderID,
-		UserID:    reqBody.UserID,
-		Amount:    reqBody.Amount,
-		Method:    reqBody.Method,
-		Status:    "success",
-		Timestamp: time.Now(),
+		OrderID:       reqBody.OrderID,
+		UserID:        reqBody.UserID,
+		ReservationID: reqBody.ReservationID,
+		Amount:        reqBody.Amount,
+		Method:        reqBody.Method,
+		Status:        "success",
+		Timestamp:     time.Now(),
 	})
 
 	w.WriteHeader(http.StatusCreated)

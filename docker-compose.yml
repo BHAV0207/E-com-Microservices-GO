@@ -79,6 +79,8 @@ services:
       - "6000:6000"
     environment:
       - PORT=6000
+      - KAFKA_BROKER=kafka:9092
+      - PAYMENT_TOPIC=payment-events
     env_file:
       - .env
     networks:

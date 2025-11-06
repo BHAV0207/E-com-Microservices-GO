@@ -46,8 +46,8 @@ func main() {
 	router.HandleFunc("/reserve", InventoryHandler.ReserveInventory).Methods("POST")
 
 	go func() {
-		kafkaBroker := os.Getenv("kafka:9092") // e.g. "localhost:9092"
-		kafkaTopic := os.Getenv("payment-events") // e.g. "payment-events"
+		kafkaBroker := os.Getenv("KAFKA_BROKER") // e.g. "kafka:9092"
+		kafkaTopic := os.Getenv("PAYMENT_TOPIC") // e.g. "payment-events"
 		kafkaGroup := "inventory-consumer-group"
 
 		if kafkaBroker == "" || kafkaTopic == "" {
