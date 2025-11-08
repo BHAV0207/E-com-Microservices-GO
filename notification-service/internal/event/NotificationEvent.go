@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/BHAV0207/payment-service/internal/handler"
+	"github.com/BHAV0207/payment-service/internal/service"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func (c *Consumer) StartConsuming() {
@@ -29,7 +32,7 @@ func (c *Consumer) StartConsuming() {
 
 		// Build notification message
 		userMsg := buildMessage(event)
-		sendNotification(event.UserID, userMsg)
+		c.sendNotification(event.UserID, userMsg)
 
 		// Store notification in DB
 		notif := bson.M{
@@ -65,7 +68,26 @@ func buildMessage(event GenericEvent) string {
 	}
 }
 
-func sendNotification(userID, message string) {
-	// For now, log the notification
-	fmt.Printf("📨 Sending notification to user %s: %s\n", userID, message)
+func (c *Consumer) sendNotification(userID, message string) {
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		fmt.Println("❌ Invalid userID format:", objID)
+		return
+	}
+	user, err := service.GetUserByID(userID)
+	if err != nil {
+		fmt.Printf("❌ Failed to fetch user %s: %v\n", userID, err)
+		return
+	}
+
+	subject := "Notification from E-com Website"
+	body := fmt.Sprintf("Hey %s,<br><br>%s<br><br>– Team E-com", user.Name, message)
+
+	err = handler.SendEmail(user.Email, subject, body)
+	if err != nil {
+		fmt.Printf("❌ Failed to send email to %s: %v\n", user.Email, err)
+		return
+	}
+
+	fmt.Printf("✅ Notification email sent to %s\n", user.Email)
 }
