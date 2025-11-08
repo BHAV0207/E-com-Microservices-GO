@@ -1,56 +1,92 @@
 package main
 
-// import (
-// 	"fmt"
-// 	"log"
-// 	"net/http"
-// 	"os"
-// 	"time"
-// 	VF4bHCwD8XXBJltb
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"time"
 
-// 	mongodb+srv://jainbhav0207_db_user:VF4bHCwD8XXBJltb@cluster0.ymwavs0.mongodb.net/?appName=Cluster0
-// 	"github.com/BHAV0207/notification-service/internal/handler"
-// 	"github.com/BHAV0207/notification-service/internal/repository"
-// 	"github.com/BHAV0207/notification-service/kafka"
-// 	"github.com/gorilla/mux"
-// 	"github.com/joho/godotenv"
-// )
+	"github.com/BHAV0207/payment-service/internal/event"
+	"github.com/BHAV0207/payment-service/internal/repository"
+	"github.com/joho/godotenv"
+)
 
-// func main() {
-// 	_ = godotenv.Load()
-// 	mongoURI := os.Getenv("MONGO_URI")
+func main() {
+	// 1️⃣ Load environment variables
+	if err := godotenv.Load(); err != nil {
+		log.Println("⚠️  No .env file found — using system environment variables")
+	}
 
-// 	kafkaBroker := os.Getenv("KAFKA_BROKER")
-// 	orderTopic := os.Getenv("ORDER_TOPIC")
-// 	paymentTopic := os.Getenv("PAYMENT_TOPIC")
-// 	port := os.Getenv("PORT")
+	mongoURI := os.Getenv("MONGO_NOTIFICATION_URI")
+	port := os.Getenv("PORT")
 
-// 	if port == "" {
-// 		port = "8085"
-// 	}
+	// 2️⃣ Validate configuration
+	if mongoURI == "" {
+		log.Fatal("❌ MONGO_NOTIFICATION_URI not set in environment")
+	}
+	if port == "" {
+		port = "2000"
+	}
 
-// 	client := repository.ConnectDb(mongoURI)
-// 	db := client.Database("NotificationService")
-// 	notifCol := db.Collection("notifications")
+	// 3️⃣ Connect to MongoDB
+	client := repository.ConnectDb(mongoURI)
+	defer func() {
+		if err := client.Disconnect(context.Background()); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
-// 	// API routes
-// 	router := mux.NewRouter()
-// 	handler := &handler.NotificationHandler{Collection: notifCol}
-// 	router.HandleFunc("/notifications", handler.GetUserNotifications).Methods("GET")
+	db := client.Database("NotificationService")
+	notifCol := db.Collection("notifications")
 
-// 	// Start consumers for order & payment topics
-// 	go kafka.StartKafkaConsumer(kafkaBroker, orderTopic, "notif-order-group", notifCol)
-// 	go kafka.StartKafkaConsumer(kafkaBroker, paymentTopic, "notif-payment-group", notifCol)
+	// 4️⃣ Create and start Kafka consumers for multiple topics
+	// orderConsumer := event.NewConsumer(
+	// 	"kafka:9092",
+	// 	orderTopic,
+	// 	"notif-order-group",
+	// 	"OrderConsumer",
+	// 	notifCol,
+	// )
+	paymentConsumer := event.NewConsumer(
+		"kafka:9092",
+		"payment-events",
+		"notif-payment-group",
+		"payment-service",
+		notifCol,
+	)
 
-// 	// Start HTTP server
-// 	server := &http.Server{
-// 		Addr:         ":" + port,
-// 		Handler:      router,
-// 		ReadTimeout:  15 * time.Second,
-// 		WriteTimeout: 15 * time.Second,
-// 		IdleTimeout:  60 * time.Second,
-// 	}
+	userConsumer := event.NewConsumer(
+		"kafka:9092",
+		"user-created",
+		"notif-user-group",
+		"user-service",
+		notifCol,
+	)
 
-// 	fmt.Printf("🔔 Notification Service running on http://localhost:%s\n", port)
-// 	log.Fatal(server.ListenAndServe())
-// }
+	userDeletedConsumer := event.NewConsumer(
+		"kafka:9092",
+		"user-deleted",
+		"notif-userdel-group",
+		"user-service",
+		notifCol,
+	)
+	
+	// Run both consumers concurrently
+	// go orderConsumer.StartConsuming()
+	go userDeletedConsumer.StartConsuming()
+	go userConsumer.StartConsuming()
+	go paymentConsumer.StartConsuming()
+
+	// 5️⃣ Start HTTP server (optional for future APIs)
+	server := &http.Server{
+		Addr:         ":" + port,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	fmt.Printf("🔔 Notification Service running on http://localhost:%s\n", port)
+	log.Fatal(server.ListenAndServe())
+}

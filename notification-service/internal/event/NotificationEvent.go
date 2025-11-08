@@ -1,90 +1,71 @@
 package event
+
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/segmentio/kafka-go"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type GenericEvent struct {
-	EventType   string `json:"eventType"` // order.created, payment.success
-	UserID      string `json:"userId"`
-	OrderID     string `json:"orderId"`
-	Message     string `json:"message"`
-	Reservation string `json:"reservationId,omitempty"`
-}
-
-// StartKafkaConsumer - listens to order and payment topics
-func StartKafkaConsumer(broker, topic, group string, notifCollection *mongo.Collection) {
-	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers: []string{broker},
-		Topic:   topic,
-		GroupID: group,
-	})
-
-	fmt.Printf("📩 Notification consumer started on topic '%s'\n", topic)
+func (c *Consumer) StartConsuming() {
+	fmt.Printf("📩 [%s] Kafka consumer started on topic: %s\n", c.ServiceName, c.Kafka.Reader.Config().Topic)
 
 	for {
-		m, err := r.ReadMessage(context.Background())
+		msg, err := c.Kafka.Reader.ReadMessage(context.Background())
 		if err != nil {
-			fmt.Println("❌ Error reading message:", err)
+			fmt.Println("❌ Kafka read error:", err)
 			continue
 		}
 
 		var event GenericEvent
-		if err := json.Unmarshal(m.Value, &event); err != nil {
-			fmt.Println("❌ Invalid message:", err)
+		if err := json.Unmarshal(msg.Value, &event); err != nil {
+			fmt.Println("⚠️ Invalid Kafka event:", err)
 			continue
 		}
 
-		fmt.Printf("📬 Received event: %+v\n", event)
+		fmt.Printf("📬 [%s] Received: %+v\n", c.ServiceName, event)
 
-		// Build a user-friendly message
-		msg := buildMessage(event)
+		// Build notification message
+		userMsg := buildMessage(event)
+		sendNotification(event.UserID, userMsg)
 
-		// Send or simulate notification
-		sendNotification(event.UserID, msg)
-
-		// Save notification to DB
+		// Store notification in DB
 		notif := bson.M{
 			"userId":    event.UserID,
 			"orderId":   event.OrderID,
 			"type":      event.EventType,
-			"message":   msg,
+			"message":   userMsg,
 			"status":    "SENT",
 			"createdAt": time.Now(),
 		}
-		_, err = notifCollection.InsertOne(context.Background(), notif)
+		_, err = c.Collection.InsertOne(context.Background(), notif)
 		if err != nil {
-			fmt.Println("⚠️ Failed to insert notification:", err)
+			fmt.Println("⚠️ DB insert error:", err)
 		}
 	}
 }
 
+// Helper for message content
 func buildMessage(event GenericEvent) string {
 	switch event.EventType {
-	case "order.created":
-		return fmt.Sprintf("Your order #%s has been placed successfully!", event.OrderID)
-	case "payment.success":
-		return fmt.Sprintf("Payment for order #%s succeeded!", event.OrderID)
-	case "payment.failed":
-		return fmt.Sprintf("Payment for order #%s failed. Please retry.", event.OrderID)
-	case "order.shipped":
-		return fmt.Sprintf("Your order #%s has been shipped!", event.OrderID)
-	case "order.delivered":
-		return fmt.Sprintf("Your order #%s has been delivered!", event.OrderID)
+	case "user-creted":
+		return fmt.Sprintf("👋 Welcome aboard, User %s!", event.UserID)
+	case "user-deleted":
+		return fmt.Sprintf("👋 Goodbye, User %s! We're sad to see you go.", event.UserID)
+	case "order-created":
+		return fmt.Sprintf("✅ Order #%s placed successfully!", event.OrderID)
+	case "payment-success":
+		return fmt.Sprintf("💰 Payment for order #%s succeeded!", event.OrderID)
+	case "payment-failed":
+		return fmt.Sprintf("⚠️ Payment for order #%s failed. Please retry.", event.OrderID)
 	default:
-		return "You have a new update on your order."
+		return fmt.Sprintf("🔔 Update on your order #%s", event.OrderID)
 	}
 }
 
 func sendNotification(userID, message string) {
-	// For now, just log
-	fmt.Printf("📨 [Notify User %s] %s\n", userID, message)
-
-	// Later, you can plug an email/SMS gateway here.
+	// For now, log the notification
+	fmt.Printf("📨 Sending notification to user %s: %s\n", userID, message)
 }
